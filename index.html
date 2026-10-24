@@ -334,14 +334,18 @@ const teeBack = canvasTex(220, 270, (x, w, h) => {
   x.font = '700 9px Inter, sans-serif'; x.textAlign = "center";
   x.fillText("SEOUL / BUSAN / TAIPEI / TOKYO", 110, 186); x.fillText("SINGAPORE / HONG KONG", 110, 198);
 });
+// The real race cans: yellow, with an orange roundel carrying the white G6K mark.
+const CAN = "#f7c531";
 const canFace = canvasTex(240, 300, (x, w, h) => {
-  x.fillStyle = TEE; x.fillRect(0, 0, w, h);
-  x.fillStyle = "#fff"; x.beginPath(); x.roundRect(150, 26, 64, 20, 10); x.fill();
-  x.save(); x.translate(w / 2, h / 2 + 18); x.rotate(-.18); g6kMark(x, 0, -96, 1.75); x.restore();
+  x.fillStyle = CAN; x.fillRect(0, 0, w, h);
+  x.fillStyle = "#e9b21c"; x.fillRect(0, 0, w, 10); x.fillRect(0, h - 10, w, 10);
+  x.fillStyle = "#ef7d2f"; x.beginPath(); x.arc(w / 2, h / 2 + 12, 98, 0, Math.PI * 2); x.fill();
+  x.strokeStyle = "#f9d26a"; x.lineWidth = 6; x.stroke();
+  x.save(); x.translate(w / 2, h / 2 + 12); x.rotate(-.12); g6kMark(x, 0, -60, 1.05); x.restore();
 });
 const teeMats = [flat(TEE), flat(TEE), flat(TEE), flat(TEE),
   new THREE.MeshStandardMaterial({ map: teeFront, roughness: .85 }), new THREE.MeshStandardMaterial({ map: teeBack, roughness: .85 })];
-const canSide = flat(TEE, { roughness: .55 });
+const canSide = flat(CAN, { roughness: .5 }), capMat = flat("#1d1a1a", { roughness: .6 });
 const canMats = [canSide, canSide, canSide, canSide,
   new THREE.MeshStandardMaterial({ map: canFace, roughness: .55 }), new THREE.MeshStandardMaterial({ map: canFace, roughness: .55 })];
 async function loadImg(src) { const im = new Image(); im.src = src; try { await im.decode(); } catch (e) {} return im; }
@@ -382,7 +386,7 @@ function jerryCan(s = 1) {
   const body = new THREE.Mesh(new THREE.BoxGeometry(.32, .4, .15), canMats); body.castShadow = true; g.add(body);
   const handle = mesh(new THREE.BoxGeometry(.16, .05, .09), canSide, .04, .24, 0);
   [-.03, .11].forEach(hx => g.add(mesh(new THREE.BoxGeometry(.03, .06, .09), canSide, hx, .21, 0)));
-  const spout = mesh(new THREE.CylinderGeometry(.035, .04, .1, 6), canSide, -.12, .23, 0); spout.rotation.z = .6;
+  const spout = mesh(new THREE.CylinderGeometry(.035, .04, .1, 6), capMat, -.12, .23, 0); spout.rotation.z = .6;
   g.add(handle, spout); g.scale.setScalar(s); return g;
 }
 
