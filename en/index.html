@@ -683,7 +683,6 @@ const PROPS = {
       bar.add(mesh(new THREE.BoxGeometry(.5, .14, .03), flat(k % 2 ? "#ffffff" : "#ff5515"), 0, .24, 0));
       bar.position.set(-1.35, 0, -.25 + k * .55); bar.rotation.y = Math.PI / 2; g.add(bar);
     }
-    g.add(signPost("6 KM", -1.35, -1.0, .5));
     const table = new THREE.Group();
     table.add(mesh(new THREE.BoxGeometry(.32, .04, .8), flat("#ffffff"), 0, .38, 0));
     [[-.12, -.35], [.12, -.35], [-.12, .35], [.12, .35]].forEach(([x, z]) => table.add(mesh(new THREE.BoxGeometry(.03, .38, .03), flat("#6d6a76"), x, .19, z)));
