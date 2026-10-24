@@ -381,6 +381,28 @@ function wvFlag(h = 1.7, color = "#ff5515") {
   const cloth = mesh(new THREE.PlaneGeometry(.78, .37), logoMat(tex), .4, h - .22, 0);
   f.add(cloth); f.userData.cloth = cloth; return f;
 }
+// Worn containers the children really carry: a cracked plastic bucket and a dented basin.
+const muddy = flat("#8a7350", { roughness: .3 });
+function brokenBucket(s = 1, col = "#5d8fb0") {
+  const g = new THREE.Group(), side = flat(col, { side: THREE.DoubleSide, roughness: .8 });
+  // A chunk is missing from the rim: the wall stops short of a full circle.
+  const wall = new THREE.Mesh(new THREE.CylinderGeometry(.14, .11, .24, 12, 1, true, .5, Math.PI * 1.72), side); wall.castShadow = true; g.add(wall);
+  g.add(mesh(new THREE.CylinderGeometry(.11, .11, .015, 12), side, 0, -.115, 0));
+  const water = mesh(new THREE.CylinderGeometry(.125, .125, .01, 12), muddy, 0, .02, 0); g.add(water);
+  const crack = mesh(new THREE.BoxGeometry(.012, .16, .01), flat("#2b3a44"), 0, .02, .128); crack.rotation.z = .35; g.add(crack);
+  const tape = mesh(new THREE.BoxGeometry(.09, .035, .01), flat("#c9c2b0"), -.06, -.04, .118); tape.rotation.y = -.45; g.add(tape);
+  const handle = mesh(new THREE.TorusGeometry(.13, .008, 4, 12, Math.PI), flat("#6d6a76"), 0, .12, 0); handle.rotation.y = Math.PI / 2; g.add(handle);
+  g.scale.setScalar(s); return g;
+}
+function basin(s = 1, col = "#c0563c") {
+  const g = new THREE.Group(), side = flat(col, { side: THREE.DoubleSide, roughness: .85 });
+  const bowl = new THREE.Mesh(new THREE.CylinderGeometry(.3, .19, .11, 14, 1, true), side); bowl.castShadow = true; g.add(bowl);
+  g.add(mesh(new THREE.CylinderGeometry(.19, .19, .012, 14), side, 0, -.05, 0));
+  const rim = mesh(new THREE.TorusGeometry(.3, .018, 4, 14), side, 0, .055, 0); rim.rotation.x = Math.PI / 2; rim.scale.set(1, .92, 1); g.add(rim);
+  g.add(mesh(new THREE.CylinderGeometry(.27, .27, .01, 14), muddy, 0, .03, 0));
+  const dent = mesh(new THREE.SphereGeometry(.05, 6, 4), flat("#8f3f2c"), .22, .0, .12); dent.scale.set(1, .5, .6); g.add(dent);
+  g.scale.setScalar(s); return g;
+}
 function jerryCan(s = 1) {
   const g = new THREE.Group();
   const body = new THREE.Mesh(new THREE.BoxGeometry(.32, .4, .15), canMats); body.castShadow = true; g.add(body);
@@ -777,7 +799,7 @@ const PROPS = {
     for (let i = 0; i < 8; i++) g.add(mesh(new THREE.ConeGeometry(.05, .45 + rand() * .2, 4), flat("#6f9a55"), -.6 + (i % 4) * .13, .22, -1.35 + Math.floor(i / 4) * .16));
     const kids = [localKid("#7fb069", true, "cry"), localKid("#f2c14e", false, "cry"), localKid("#e07a5f", true, "cry")];
     kids.forEach((k, i) => {
-      if (i !== 1) { const c = jerryCan(.95); c.position.y = -.7; c.rotation.y = Math.PI / 2; k.armR.add(c); }
+      if (i !== 1) { const c = brokenBucket(.95, i ? "#b5533c" : "#5d8fb0"); c.position.y = -.68; k.armR.add(c); }
       k.g.position.set(-.65 + i * .38, 0, .3 + (i % 2) * .12); g.add(k.g);
     });
     anim.push(t => {
@@ -791,11 +813,11 @@ const PROPS = {
     // Two girls walk close together; a third walks alone behind them.
     const pair = [villager("#e07a5f", "#3d5a80", .66, "cry"), villager("#f2c14e", "#c43b2b", .62, "cry")];
     pair.forEach((v, k) => {
-      const jc = jerryCan(.95); jc.position.y = -.7; jc.rotation.y = Math.PI / 2; (k ? v.armR : v.armL).add(jc);
+      const jc = brokenBucket(.95, k ? "#7f9a5a" : "#5d8fb0"); jc.position.y = -.68; (k ? v.armR : v.armL).add(jc);
       v.g.position.set(-.45 + k * .32, 0, .4); g.add(v.g);
     });
     const girl = villager("#8ccbe6", "#6d6a76", .6, "cry");
-    const gc = jerryCan(.9); gc.position.y = -.7; gc.rotation.y = Math.PI / 2; girl.armR.add(gc);
+    const gc = brokenBucket(.9, "#c9a33a"); gc.position.y = -.66; girl.armR.add(gc);
     girl.g.position.set(.75, 0, -.75); girl.g.rotation.y = -.4; g.add(girl.g);
     for (let k = 0; k < 26; k++) {
       const a = rand() * Math.PI * 2, rr = .95 + rand() * .95;
@@ -818,7 +840,7 @@ const PROPS = {
     kid.g.position.set(.35, 0, .15); kid.g.rotation.y = -.5; g.add(kid.g);
     const sad = [localKid("#7fb069", false, "cry"), localKid("#f2c14e", true, "cry")];
     sad.forEach((k, i) => { k.g.position.set(.75 + i * .4, 0, .75 - i * .3); k.g.rotation.y = -.3; g.add(k.g); });
-    const jc = jerryCan(.9); jc.position.y = -.7; jc.rotation.y = Math.PI / 2; kid.armR.add(jc);
+    const jc = brokenBucket(.9, "#5d8fb0"); jc.position.y = -.66; kid.armR.add(jc);
     const flies = [];
     for (let k = 0; k < 6; k++) { const f = mesh(new THREE.SphereGeometry(.018, 4, 3), flat("#111222"), -.3, .3, -.45); g.add(f); flies.push(f); }
     anim.push(t => {
@@ -843,8 +865,9 @@ const PROPS = {
     });
     const kids = [localKid("#e07a5f", false, "pain"), localKid("#8ccbe6", true, "pain"), localKid("#f2c14e", false, "pain")];
     kids.forEach((k, i) => {
-      if (i < 2) { const c = jerryCan(1.15); c.position.y = 1.78; k.g.add(c); }
-      else { const c = jerryCan(1); c.position.y = -.7; c.rotation.y = Math.PI / 2; k.armR.add(c); }
+      if (i === 0) { const c = basin(1.05); c.position.y = 1.62; c.rotation.z = .06; k.g.add(c); }
+      else if (i === 1) { const c = brokenBucket(1.2, "#b5533c"); c.position.y = 1.72; c.rotation.z = -.05; k.g.add(c); }
+      else { const c = brokenBucket(1.05, "#5d8fb0"); c.position.y = -.7; k.armR.add(c); }
       k.g.position.set(-.6 + i * .42, 0, .2 + (i % 2) * .15); g.add(k.g);
     });
     anim.push(t => kids.forEach((k, i) => {
@@ -1110,7 +1133,7 @@ for (let dd = 1; dd < routeLen - 1; dd += 1.3) {
   dsh.rotation.y = Math.atan2(tg.x, tg.z); dsh.castShadow = false; scene.add(dsh);
 }
 // Kilometre markers along the way.
-for (let k = 1; k <= 5; k++) {
+for (let k = 1; k <= 4; k++) {
   const u = k / 6, p = route.getPointAt(u), tg = route.getTangentAt(u);
   const side = k % 2 ? -1 : 1, nx = tg.z * side * 1.35, nz = -tg.x * side * 1.35;
   const sp = signPost(`${k} KM`, p.x + nx, p.z + nz, .55); sp.rotation.y = Math.atan2(tg.x, tg.z) + Math.PI; scene.add(sp);
