@@ -172,6 +172,8 @@ button:focus-visible, a:focus-visible, .pill:focus-visible { outline: 2px solid 
 .tools .lang { background: var(--ink); color: #fff; display: inline-flex; gap: 6px; align-items: center; }
 .tools .lang:hover { background: var(--orange-deep); }
 .tools .lang span { opacity: .55; font-weight: 500; }
+.tools .music { background: var(--paper); color: var(--ink); }
+.tools .music.muted { color: var(--muted); text-decoration: line-through; text-decoration-thickness: 1.5px; }
 </style>
 
 <div id="stage" aria-hidden="true"></div>
@@ -188,6 +190,7 @@ button:focus-visible, a:focus-visible, .pill:focus-visible { outline: 2px solid 
 <nav class="tools" aria-label="檢視">
   <a class="chip signup" href="https://www.worldvision.org.tw/articles/302" target="_blank" rel="noopener">立即報名 ↗</a>
   <a class="chip lang" href="en/" lang="en" aria-label="Switch to English">中文 <span>|</span> EN</a>
+  <button class="chip music" id="btnMusic" type="button" aria-pressed="true" data-on="♪ 音樂：開" data-off="♪ 音樂：關">♪ 音樂：開</button>
   <button class="chip" id="btnAll" type="button">⤢ 全景</button>
   <button class="chip" id="btnList" type="button" aria-pressed="false">☰ 清單</button>
 </nav>
@@ -1468,3 +1471,83 @@ requestAnimationFrame(frame);
 </script>
 
 </body></html>
+<script>
+/* Original background music, generated live with Web Audio: a soft marimba tune over a warm pad,
+   with a light shaker and kick. Quiet by default; the button turns it on and off. */
+(() => {
+  const btn = document.getElementById("btnMusic");
+  if (!btn || !window.AudioContext && !window.webkitAudioContext) { if (btn) btn.hidden = true; return; }
+  const LBL = { on: btn.dataset.on, off: btn.dataset.off };
+  let on = true, ctx = null, master = null, timer = null, step = 0, next = 0, noise = null;
+  try { on = localStorage.getItem("g6k-music") !== "off"; } catch (e) {}
+  const paint = () => { btn.textContent = on ? LBL.on : LBL.off; btn.setAttribute("aria-pressed", String(on)); btn.classList.toggle("muted", !on); };
+  paint();
+
+  const BPM = 96, STEP = 60 / BPM / 2;                        // eighth notes
+  const mtof = m => 440 * Math.pow(2, (m - 69) / 12);
+  const CHORDS = [[48, 52, 55], [43, 47, 50], [45, 48, 52], [41, 45, 48]]; // C  G  Am  F
+  const SCALE = [60, 62, 64, 67, 69, 72, 74, 76];                         // C major pentatonic-ish
+  const MEL = [[4, -1, 2, 4, 5, -1, 4, 2], [1, -1, 2, 1, 0, -1, -1, 1], [2, -1, 4, 5, 7, -1, 5, 4], [3, -1, 2, 0, 1, -1, 2, -1]];
+
+  function tone(t, f, v, type, attack, decay, dest) {
+    const o = ctx.createOscillator(), g = ctx.createGain();
+    o.type = type; o.frequency.value = f;
+    g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(v, t + attack); g.gain.exponentialRampToValueAtTime(.0001, t + attack + decay);
+    o.connect(g).connect(dest || master); o.start(t); o.stop(t + attack + decay + .05);
+  }
+  function marimba(t, m, v) { tone(t, mtof(m), v, "sine", .004, .55); tone(t, mtof(m) * 4, v * .18, "sine", .002, .12); }
+  function pad(t, notes, dur) {
+    const lp = ctx.createBiquadFilter(); lp.type = "lowpass"; lp.frequency.value = 900; lp.connect(master);
+    notes.forEach(m => tone(t, mtof(m), .07, "triangle", .5, dur, lp));
+  }
+  function shaker(t, v) {
+    const s = ctx.createBufferSource(), hp = ctx.createBiquadFilter(), g = ctx.createGain();
+    s.buffer = noise; hp.type = "highpass"; hp.frequency.value = 7000;
+    g.gain.setValueAtTime(v, t); g.gain.exponentialRampToValueAtTime(.0001, t + .06);
+    s.connect(hp).connect(g).connect(master); s.start(t); s.stop(t + .08);
+  }
+  function kick(t) {
+    const o = ctx.createOscillator(), g = ctx.createGain();
+    o.frequency.setValueAtTime(110, t); o.frequency.exponentialRampToValueAtTime(45, t + .18);
+    g.gain.setValueAtTime(.35, t); g.gain.exponentialRampToValueAtTime(.0001, t + .25);
+    o.connect(g).connect(master); o.start(t); o.stop(t + .3);
+  }
+  function schedule() {
+    while (next < ctx.currentTime + .25) {
+      const bar = Math.floor(step / 8) % 4, s = step % 8, chord = CHORDS[bar];
+      if (s === 0) pad(next, chord.map(m => m + 12), STEP * 8);
+      if (s === 0 || s === 4) { kick(next); marimba(next, chord[0], .32); }
+      if (s === 6) marimba(next, chord[2], .2);
+      const m = MEL[bar][s]; if (m >= 0) marimba(next, SCALE[m], .3);
+      if (s % 2 === 1) shaker(next, .05);
+      next += STEP; step++;
+    }
+  }
+  function start() {
+    if (ctx) return;
+    ctx = new (window.AudioContext || window.webkitAudioContext)();
+    master = ctx.createGain(); master.gain.value = .09;            // quiet background level
+    const comp = ctx.createDynamicsCompressor(); master.connect(comp).connect(ctx.destination);
+    noise = ctx.createBuffer(1, ctx.sampleRate * .1, ctx.sampleRate);
+    const d = noise.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+    next = ctx.currentTime + .1; timer = setInterval(schedule, 60);
+  }
+  const play = () => { start(); ctx.resume(); };
+  const stop = () => { if (ctx) ctx.suspend(); };
+
+  // Browsers only allow sound after the visitor interacts, so the music begins on the first tap or click.
+  const first = e => {
+    if (e.target.closest && e.target.closest("#btnMusic")) return;
+    removeEventListener("pointerdown", first, true); removeEventListener("keydown", first, true);
+    if (on) play();
+  };
+  addEventListener("pointerdown", first, true); addEventListener("keydown", first, true);
+
+  btn.addEventListener("click", () => {
+    on = !on; paint();
+    try { localStorage.setItem("g6k-music", on ? "on" : "off"); } catch (e) {}
+    on ? play() : stop();
+  });
+  document.addEventListener("visibilitychange", () => { if (!ctx) return; document.hidden ? ctx.suspend() : (on && ctx.resume()); });
+})();
+</script>
