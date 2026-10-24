@@ -169,6 +169,9 @@ button:focus-visible, a:focus-visible, .pill:focus-visible { outline: 2px solid 
 @media (max-height: 640px) and (max-width: 560px) {
   .card ul li:nth-child(3) { display: none; }
 }
+.tools .lang { background: var(--ink); color: #fff; display: inline-flex; gap: 6px; align-items: center; }
+.tools .lang:hover { background: var(--orange-deep); }
+.tools .lang span { opacity: .55; font-weight: 500; }
 </style>
 
 <div id="stage" aria-hidden="true"></div>
@@ -184,6 +187,7 @@ button:focus-visible, a:focus-visible, .pill:focus-visible { outline: 2px solid 
 
 <nav class="tools" aria-label="檢視">
   <a class="chip signup" href="https://www.worldvision.org.tw/articles/302" target="_blank" rel="noopener">立即報名 ↗</a>
+  <a class="chip lang" href="en/" lang="en" aria-label="Switch to English">中文 <span>|</span> EN</a>
   <button class="chip" id="btnAll" type="button">⤢ 全景</button>
   <button class="chip" id="btnList" type="button" aria-pressed="false">☰ 清單</button>
 </nav>
