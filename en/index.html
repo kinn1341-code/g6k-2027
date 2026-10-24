@@ -221,7 +221,7 @@ const ISLANDS = [
            "The water is often unsafe and makes children sick; the long walk also leaves them no time for school.",
            "On 27 March 2027, we run for children’s clean water."], logo: true },
   { grp: "race", kind: "Race", land: "沙丘", eb: "", name: "General Run", sk: "Sign up with family, friends and colleagues", tags: ["NT$700", "1+1 · 2,800 places"], obj: "runner",
-    cues: ["Sign up and bring one more person — family, a friend or a colleague — to walk 6 km for children.",
+    cues: ["Sign up and bring one more person — family, a friend or a colleague — to run 6 km for children.",
            "Includes a race shirt and bib; finishers get a laser-engraved name and an e-certificate."] },
   { grp: "race", kind: "Race", land: "石礫地", eb: "", name: "Jerry Can Challenge", sk: "Carry a yellow Jerry Can filled with water", tags: ["NT$850", "1+1 · 200 places"], obj: "jerry",
     cues: ["This year the yellow Jerry Cans are filled with water, so every step carries the real weight.",
@@ -1316,7 +1316,7 @@ const rows = ISLANDS.map((d, i) => {
 
 const card = document.getElementById("card");
 let current = -1;
-const ctaHTML = `<a class="cta" href="${SIGNUP}" target="_blank" rel="noopener">Register · Walk 6 km for children ↗</a>`;
+const ctaHTML = `<a class="cta" href="${SIGNUP}" target="_blank" rel="noopener">Register · Run 6 km for children ↗</a>`;
 // The card can fold down to its title, sign-up button and navigation.
 let folded = false;
 folded = matchMedia("(max-width: 560px)").matches;
