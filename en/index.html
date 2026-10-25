@@ -588,7 +588,7 @@ function tree(x, z, h) {
   const t = new THREE.Group();
   t.add(mesh(new THREE.CylinderGeometry(.05, .08, h * .5, 5), flat("#7a5a3e"), 0, h * .25, 0));
   t.add(mesh(new THREE.ConeGeometry(.32 * h, h * .8, 6), flat(rand() > .5 ? "#6f9a55" : "#83a85e"), 0, h * .75, 0));
-  t.position.set(x, 0, z); return t;
+  t.position.set(x, 0, z); t.userData.tree = true; return t;
 }
 function drop(color, s = 1) {
   const d = new THREE.Group(), m = flat(color, { roughness: .35 });
@@ -1079,7 +1079,7 @@ function deadTree(x, z, h) {
     const b = mesh(new THREE.CylinderGeometry(.02, .035, h * .45, 4), deadWood, 0, h * (.55 + k * .12), 0);
     b.rotation.set(0, ry * 4, rz); b.translateY(h * .18); t.add(b);
   });
-  t.position.set(x, 0, z); return t;
+  t.position.set(x, 0, z); t.userData.tree = true; return t;
 }
 // Rim dressing for each land type, kept outside the scene in the middle.
 function dress(g, land, r) {
@@ -1200,6 +1200,14 @@ ISLANDS.forEach((d, i) => {
   scene.add(g);
   islands.push({ g, view });
 });
+
+// Remove any tree, from any stop, that stands near a sign and could hide it.
+{
+  scene.updateMatrixWorld(true);
+  const signs = [], trees = [], v = new THREE.Vector3();
+  scene.traverse(o => { if (o.userData.isSign) signs.push(o.getWorldPosition(new THREE.Vector3())); if (o.userData.tree) trees.push(o); });
+  trees.forEach(t => { t.getWorldPosition(v); if (signs.some(sp => Math.hypot(sp.x - v.x, sp.z - v.z) < 1.9)) t.parent.remove(t); });
+}
 
 // The running track itself: an orange ribbon with white edges and a dashed centre line.
 function ribbon(width, y, mat, from = 0, to = 1) {
