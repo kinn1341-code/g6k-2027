@@ -623,7 +623,7 @@ function savanna(g, r, opts = {}) {
     const seg = mesh(new THREE.BoxGeometry(.5, .012, r * .55), path, x, .008, z); seg.rotation.y = ry; seg.castShadow = false; g.add(seg);
   });
   // far hill at the back rim
-  if (opts.hill !== false) { const h = mesh(new THREE.SphereGeometry(r * .5, 10, 6, 0, Math.PI * 2, 0, Math.PI / 2), flat("#a98a5e"), r * .15, 0, -r * .82); h.scale.set(1.5, .5, .5); h.castShadow = false; g.add(h);
+  if (opts.hill !== false) { const h = mesh(new THREE.SphereGeometry(r * .5, 10, 6, 0, Math.PI * 2, 0, Math.PI / 2), flat("#a98a5e"), r * .15, 0, -r * .82); h.scale.set(1.5, .5, .5); h.castShadow = false; h.userData.tree = true; g.add(h);
     for (let k = 0; k < 4; k++) g.add(mesh(new THREE.BoxGeometry(r * .5, .02, .06), flat("#7f9a4a"), r * .15 + (k - 1.5) * .05, .12 + k * .08, -r * .66 + k * .03)); }
   // dry grass, shrubs, baobab, banana
   for (let k = 0; k < 14; k++) {
@@ -710,10 +710,41 @@ function textSign(text, bg, fg, w = 360, h = 120, size = 64) {
     x.fillText(text, w / 2 + 7, h / 2 + 3);
   });
 }
+// Wooden arrow signpost, like a trail marker: grained plank, arrow tip, dark burnt-in lettering.
+function woodSign(big, small, bw = 1.15, bh = .34, postH = .5) {
+  const TW = 1024, TH = Math.round(TW * bh / bw), tip = .16;
+  const tex = canvasTex(TW, TH, (x, w, h) => {
+    const gr = x.createLinearGradient(0, 0, 0, h); gr.addColorStop(0, "#e2b66a"); gr.addColorStop(1, "#c9964c");
+    x.fillStyle = gr; x.fillRect(0, 0, w, h);
+    for (let k = 0; k < 14; k++) { x.strokeStyle = `rgba(120,78,30,${.12 + (k % 3) * .05})`; x.lineWidth = 2 + (k % 2) * 2; x.beginPath(); const y = 8 + k * h / 14;
+      x.moveTo(0, y); for (let px = 0; px <= w; px += 64) x.lineTo(px, y + Math.sin(px / 90 + k) * 4); x.stroke(); }
+    x.strokeStyle = "rgba(110,70,25,.35)"; x.lineWidth = 3; x.beginPath(); x.ellipse(w * .62, h * .4, 34, 12, 0, 0, Math.PI * 2); x.stroke();
+    x.strokeStyle = "rgba(90,55,20,.5)"; x.lineWidth = 6; x.strokeRect(3, 3, w - 6, h - 6);
+    const tw = w * (1 - tip);
+    x.fillStyle = "#2e1604"; x.strokeStyle = "#2e1604"; x.lineJoin = "round"; x.textAlign = "center"; x.textBaseline = "middle";
+    if (small) { x.font = '700 44px "Noto Sans TC", Inter, sans-serif'; x.globalAlpha = .8; x.fillText(small, tw / 2, h * .24); x.globalAlpha = 1; }
+    let fs = small ? 140 : 170; x.font = `900 ${fs}px "Noto Sans TC", Inter, sans-serif`;
+    while (x.measureText(big).width > tw * .88 && fs > 50) { fs -= 6; x.font = `900 ${fs}px "Noto Sans TC", Inter, sans-serif`; }
+    x.lineWidth = Math.max(3, fs * .05); x.strokeText(big, tw / 2, small ? h * .62 : h * .54); x.fillText(big, tw / 2, small ? h * .62 : h * .54);
+  });
+  // arrow-shaped plank with UVs mapped to the texture
+  const sh = new THREE.Shape(), L = -bw / 2, R = bw / 2, T = bh / 2, B = -bh / 2, Rt = R - bw * tip;
+  sh.moveTo(L, B); sh.lineTo(Rt, B); sh.lineTo(R, 0); sh.lineTo(Rt, T); sh.lineTo(L, T); sh.lineTo(L, B);
+  const face = new THREE.ShapeGeometry(sh), pos = face.attributes.position, uv = [];
+  for (let k = 0; k < pos.count; k++) uv.push((pos.getX(k) - L) / bw, (pos.getY(k) - B) / bh);
+  face.setAttribute("uv", new THREE.Float32BufferAttribute(uv, 2));
+  const mat = new THREE.MeshBasicMaterial({ map: tex });
+  const g = new THREE.Group(), board = new THREE.Group();
+  const edge = new THREE.Mesh(new THREE.ExtrudeGeometry(sh, { depth: .04, bevelEnabled: false }), flat("#9a6a32")); edge.position.z = -.02; edge.castShadow = true;
+  const f = new THREE.Mesh(face, mat); f.position.z = .021;
+  const b = new THREE.Mesh(face, mat); b.position.z = -.021; b.rotation.y = Math.PI;
+  board.add(edge, f, b); board.position.y = postH + bh / 2 - .06; board.rotation.x = -.38;
+  const post = mesh(new THREE.BoxGeometry(.07, postH + bh, .07), flat("#8a5a2b"), -bw * .1, (postH + bh) / 2 - .02, -.03);
+  g.add(post, board); g.userData.faces = [f, b, edge];
+  return g;
+}
 function signPost(text, x, z, wd = .55) {
-  const sp = new THREE.Group();
-  sp.add(mesh(new THREE.CylinderGeometry(.025, .025, .7, 6), flat("#6d6a76"), 0, .35, 0));
-  sp.add(mesh(new THREE.PlaneGeometry(wd, wd / 3), new THREE.MeshStandardMaterial({ map: textSign(text, "#ffffff", "#111222"), roughness: .8, side: THREE.DoubleSide }), 0, .72, .03));
+  const sp = woodSign(text, "", wd * 1.25, wd * .38, .55);
   sp.position.set(x, 0, z); return sp;
 }
 function puff() {
@@ -833,7 +864,7 @@ const PROPS = {
       x.fillStyle = "#111222"; x.font = '900 64px "Noto Sans TC", sans-serif'; x.textAlign = "center"; x.textBaseline = "middle";
       x.fillText("太陽能板", w / 2 + 7, h / 2 + 3);
     });
-    g.add(mesh(new THREE.PlaneGeometry(.6, .2), new THREE.MeshStandardMaterial({ map: solarSign, roughness: .8 }), -.15, .5, -1.25));
+    g.add(signPost("太陽能板", -.5, -.6, .62));
     // Elevated water tower like the field photo: steel lattice, ladder, white tank with an orange band.
     const tower = new THREE.Group(), steel = flat("#d9dde0", { roughness: .4, metalness: .2 });
     const H = 1.75, w = .26;
@@ -871,10 +902,10 @@ const PROPS = {
     bucketW.add(mesh(new THREE.CylinderGeometry(.13, .1, .22, 14), flat("#f4f4f2", { roughness: .4 }), 0, 0, 0));
     bucketW.add(mesh(new THREE.CylinderGeometry(.12, .12, .01, 14), flat("#9fd8ec", { roughness: .15 }), 0, .07, 0));
     const hdl = mesh(new THREE.TorusGeometry(.13, .006, 4, 12, Math.PI), flat("#6d6a76"), 0, .11, 0); hdl.rotation.y = Math.PI / 2; bucketW.add(hdl);
-    bucketW.position.set(.52, .27, .05); wp.add(bucketW);
+    bucketW.position.set(-.42, .27, .02); wp.add(bucketW);
     const pour = mesh(new THREE.CylinderGeometry(.012, .012, .36, 6), flat("#bfe8f5", { transparent: true, opacity: .85, roughness: .1 }), .52, .53, .05); wp.add(pour);
-    const mom = villager("#2f5fb3", "#c45a2a", .78, "smile");
-    mom.legL.rotation.x = mom.legR.rotation.x = 1.45; mom.g.position.set(.12, -.42, .32); mom.g.rotation.y = -.15;
+    const mom = villager("#2f5fb3", "#c45a2a", .6, "smile");
+    mom.legL.rotation.x = mom.legR.rotation.x = 1.45; mom.g.position.set(.2, -.33, .2); mom.g.rotation.y = Math.PI / 2 - .25;
     const baby = new THREE.Group();
     baby.add(mesh(new THREE.IcosahedronGeometry(.11, 1), flat(SKIN[4]), 0, 0, 0));
     baby.add(mesh(new THREE.SphereGeometry(.15, 10, 8), kangaMat("#8a3b2a"), 0, -.16, .02));
@@ -883,7 +914,7 @@ const PROPS = {
     wp.add(mom.g);
     wp.position.set(-.85, 0, .55); wp.rotation.y = .15; g.add(wp);
     anim.push(t => {
-      mom.armL.rotation.set(-1.0, 0, .25); mom.armR.rotation.set(-1.0 + Math.sin(t * 1.5) * .06, 0, -.25);
+      mom.armL.rotation.set(-1.35 + Math.sin(t * 9) * .12, 0, .3); mom.armR.rotation.set(-1.35 - Math.sin(t * 9) * .12, 0, -.3);
       pour.scale.y = 1 + Math.sin(t * 22) * .05; baby.rotation.y = Math.sin(t * .8) * .25;
     });
     // Handwashing station fed by the tower, with a child washing up.
@@ -1066,9 +1097,9 @@ const PROPS = {
       const tp = mesh(new THREE.CylinderGeometry(.02, .02, .1, 6), flat("#b9b6ae"), x, .74, -.04); tp.rotation.x = Math.PI / 2; wash.add(tp);
       const st = mesh(new THREE.CylinderGeometry(.012, .012, .2, 6), flat("#9fd8ec", { transparent: true, opacity: .85, roughness: .2 }), x, .62, .0); wash.add(st); streams.push(st);
     });
-    wash.position.set(-.05, 0, .55); g.add(wash);
+    wash.position.set(-.05, 0, .55); wash.rotation.y = -Math.PI / 2; g.add(wash);
     const washer = localKid("#e07a5f", true);
-    washer.g.position.set(-.13, 0, .92); washer.g.rotation.y = Math.PI; g.add(washer.g);
+    washer.g.position.set(-.42, 0, .47); washer.g.rotation.y = Math.PI / 2; g.add(washer.g);
     const bubbles = [];
     for (let k = 0; k < 5; k++) { const bb = mesh(new THREE.SphereGeometry(.025, 6, 4), flat("#ffffff", { transparent: true, opacity: .8 }), -.13, .62, .7); g.add(bb); bubbles.push(bb); }
     // A private toilet block: separate stalls for girls and boys, with lockable doors.
@@ -1095,7 +1126,7 @@ const PROPS = {
       book.rotation.z = Math.sin(t * .8) * .04;
       washer.armL.rotation.set(-1.3 + Math.sin(t * 9) * .15, 0, -.2); washer.armR.rotation.set(-1.3 - Math.sin(t * 9) * .15, 0, .2);
       streams.forEach((st, k) => { st.scale.y = 1 + Math.sin(t * 20 + k) * .06; });
-      bubbles.forEach((bb, k) => { const f = (t * .6 + k / 5) % 1; bb.position.set(-.13 + Math.sin(k * 2.1 + t) * .12, .6 + f * .5, .72); bb.material.opacity = .8 * (1 - f); });
+      bubbles.forEach((bb, k) => { const f = (t * .6 + k / 5) % 1; bb.position.set(-.27, .6 + f * .5, .47 + Math.sin(k * 2.1 + t) * .12); bb.material.opacity = .8 * (1 - f); });
       drinker.armR.rotation.set(-2.2 + Math.sin(t * 1.5) * .15, 0, .45); drinker.armL.rotation.set(0, 0, -2.5 + Math.sin(t * 5) * .2);
       drinker.g.position.y = Math.abs(Math.sin(t * 2.5)) * .03;
     });
@@ -1298,25 +1329,9 @@ ISLANDS.forEach((d, i) => {
   // Small ground sign at the front-left corner of each stop (not the start), clear of the runners.
   if (i !== 0) {
     const G = GROUPS[d.grp], parts = d.name.split("："), big = parts[parts.length - 1], small = parts.length > 1 ? parts[0] : G.label;
-    const bw = 1.0, bh = .28, TW = 1024, TH = Math.round(TW * bh / bw);
-    const fill = d.grp === "start" ? "#ff5515" : G.c;
-    const tex = canvasTex(TW, TH, (x, w, h) => {
-      x.fillStyle = fill; x.fillRect(0, 0, w, h);
-      x.fillStyle = "rgba(255,255,255,.18)"; x.fillRect(0, h - 14, w, 14);
-      x.fillStyle = "#ffffff"; x.textAlign = "center"; x.textBaseline = "middle";
-      x.font = '700 40px "Noto Sans TC", Inter, sans-serif'; x.globalAlpha = .9; x.fillText(small, w / 2, h * .25); x.globalAlpha = 1;
-      let fs = 150; x.font = `900 ${fs}px "Noto Sans TC", Inter, sans-serif`;
-      while (x.measureText(big).width > w * .9 && fs > 60) { fs -= 6; x.font = `900 ${fs}px "Noto Sans TC", Inter, sans-serif`; }
-      x.fillText(big, w / 2, h * .62);
-    });
-    const sign = new THREE.Group(), mat = new THREE.MeshBasicMaterial({ map: tex });
-    const front = new THREE.Mesh(new THREE.PlaneGeometry(bw, bh), mat); front.position.set(0, .1 + bh / 2, .02);
-    const back = new THREE.Mesh(new THREE.PlaneGeometry(bw, bh), mat); back.position.set(0, .1 + bh / 2, -.02); back.rotation.y = Math.PI;
-    const frame = mesh(new THREE.BoxGeometry(bw + .04, bh + .04, .03), flat("#ffffff"), 0, .1 + bh / 2, 0);
-    sign.add(frame, front, back);
-    [-bw * .42, bw * .42].forEach(px => sign.add(mesh(new THREE.BoxGeometry(.04, .12, .04), flat("#6d6a76"), px, .06, 0)));
-    [front, back, frame].forEach(m => { m.userData.idx = i; pickable.push(m); });
-    sign.position.set(r * .62, 0, r * .62); sign.rotation.set(-.45, -.4, 0);
+    const sign = woodSign(big, small, 1.25, .36, .42);
+    sign.userData.faces.forEach(m => { m.userData.idx = i; pickable.push(m); });
+    sign.position.set(r * .62, 0, r * .62); sign.rotation.y = -.4;
     sign.userData.isSign = true; props.add(sign);
   }
   dress(props, d.land, r);
