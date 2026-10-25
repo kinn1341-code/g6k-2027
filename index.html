@@ -562,9 +562,84 @@ function goat(color = "#e9e2d4") {
   return gt;
 }
 // An African woman or girl in a wrap skirt and headscarf.
+// African landscape pieces for the water-route stops: red-earth trail, dry grass, shrubs,
+// a baobab, banana plants and a far hill, in the spirit of the field photos.
+const kangaCache = {};
+function kangaMat(base) {
+  if (!kangaCache[base]) {
+    const t = canvasTex(128, 128, (x, w, h) => {
+      x.fillStyle = base; x.fillRect(0, 0, w, h);
+      const acc = ["#f2c14e", "#e07a5f", "#2f6f4f", "#111222"];
+      for (let row = 0; row < 4; row++) for (let col = 0; col < 4; col++) {
+        x.fillStyle = acc[(row + col) % 4]; x.beginPath(); x.arc(16 + col * 32, 16 + row * 32, 9, 0, Math.PI * 2); x.fill();
+        x.strokeStyle = "#ffffff"; x.lineWidth = 2; x.stroke();
+      }
+      x.fillStyle = acc[0]; x.fillRect(0, h - 10, w, 10);
+    });
+    t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(2, 1);
+    kangaCache[base] = new THREE.MeshStandardMaterial({ map: t, roughness: .85 });
+  }
+  return kangaCache[base];
+}
+function jug(s = 1) {
+  const g = new THREE.Group();
+  g.add(mesh(new THREE.CylinderGeometry(.13, .14, .34, 12), new THREE.MeshStandardMaterial({ color: "#dfeef2", transparent: true, opacity: .55, roughness: .15 }), 0, 0, 0));
+  g.add(mesh(new THREE.CylinderGeometry(.11, .11, .2, 12), flat("#b9d6dc", { transparent: true, opacity: .6 }), 0, -.05, 0));
+  g.add(mesh(new THREE.CylinderGeometry(.05, .07, .07, 10), new THREE.MeshStandardMaterial({ color: "#dfeef2", transparent: true, opacity: .55 }), 0, .2, 0));
+  g.add(mesh(new THREE.CylinderGeometry(.05, .05, .04, 10), flat("#2f74c0"), 0, .25, 0));
+  const lbl = mesh(new THREE.CylinderGeometry(.141, .141, .07, 12, 1, true), flat("#f6f1e3", { side: THREE.DoubleSide }), 0, -.02, 0); g.add(lbl);
+  g.scale.setScalar(s); return g;
+}
+function baobab(x, z, s = 1) {
+  const t = new THREE.Group(), bark = flat("#8f7b68"), leaf = flat("#6f8f45");
+  t.add(mesh(new THREE.CylinderGeometry(.22, .34, 1.1, 8), bark, 0, .55, 0));
+  [[.6, .3], [-.5, -.4], [.1, .9], [-.2, -1.2]].forEach(([rz, ry]) => {
+    const b = mesh(new THREE.CylinderGeometry(.05, .09, .5, 6), bark, 0, 1.15, 0); b.rotation.set(0, ry, rz); b.translateY(.18); t.add(b);
+    const c = mesh(new THREE.IcosahedronGeometry(.24, 0), leaf, Math.cos(ry) * .34, 1.4, Math.sin(ry) * .34); c.scale.y = .5; t.add(c);
+  });
+  t.position.set(x, 0, z); t.scale.setScalar(s); t.userData.tree = true; return t;
+}
+function banana(x, z, s = 1) {
+  const t = new THREE.Group(), green = flat("#5f9a3e", { side: THREE.DoubleSide });
+  t.add(mesh(new THREE.CylinderGeometry(.05, .08, .7, 6), flat("#7f8f4a"), 0, .35, 0));
+  for (let k = 0; k < 5; k++) {
+    const lf = new THREE.Mesh(new THREE.PlaneGeometry(.18, .7), green); lf.castShadow = true;
+    lf.position.set(0, .75, 0); lf.rotation.set(-.9 + rand() * .2, k / 5 * Math.PI * 2, 0); lf.translateY(.3); t.add(lf);
+  }
+  t.position.set(x, 0, z); t.scale.setScalar(s); t.userData.tree = true; return t;
+}
+function grassTuft(x, z, s = 1) {
+  const t = new THREE.Group();
+  for (let k = 0; k < 6; k++) {
+    const b = mesh(new THREE.ConeGeometry(.025, .35 + rand() * .2, 3), flat(["#d9b35b", "#c9a24a", "#e3c27a"][k % 3]), (rand() - .5) * .12, .17, (rand() - .5) * .12);
+    b.rotation.set((rand() - .5) * .5, 0, (rand() - .5) * .5); t.add(b);
+  }
+  t.position.set(x, 0, z); t.scale.setScalar(s); return t;
+}
+function savanna(g, r, opts = {}) {
+  // red-earth footpath across the stop, stopping short of the sign corner
+  const path = flat("#b8673e", { roughness: 1 });
+  [[-.15, -r * .8, .2], [-.05, -r * .35, -.1], [.05, r * .1, .15]].forEach(([x, z, ry]) => {
+    const seg = mesh(new THREE.BoxGeometry(.5, .012, r * .55), path, x, .008, z); seg.rotation.y = ry; seg.castShadow = false; g.add(seg);
+  });
+  // far hill at the back rim
+  if (opts.hill !== false) { const h = mesh(new THREE.SphereGeometry(r * .5, 10, 6, 0, Math.PI * 2, 0, Math.PI / 2), flat("#a98a5e"), r * .15, 0, -r * .82); h.scale.set(1.5, .5, .5); h.castShadow = false; g.add(h);
+    for (let k = 0; k < 4; k++) g.add(mesh(new THREE.BoxGeometry(r * .5, .02, .06), flat("#7f9a4a"), r * .15 + (k - 1.5) * .05, .12 + k * .08, -r * .66 + k * .03)); }
+  // dry grass, shrubs, baobab, banana
+  for (let k = 0; k < 14; k++) {
+    const a = Math.PI * (.95 + rand() * 1.1), rr = r * (.45 + rand() * .45);
+    g.add(grassTuft(Math.cos(a) * rr, Math.sin(a) * rr, .9 + rand() * .5));
+  }
+  for (let k = 0; k < 3; k++) {
+    const sb = mesh(new THREE.IcosahedronGeometry(.18 + rand() * .1, 0), flat(["#6f8a3e", "#5f7a35", "#86a04a"][k]), -r * .7 + k * .35, .14, -r * .5 + rand() * .2);
+    sb.scale.y = .7; g.add(sb);
+  }
+  if (opts.baobab !== false) g.add(baobab(-r * .62, -r * .48, .9));
+  if (opts.banana !== false) g.add(banana(r * .55, -r * .5, .9));
+}
 function villager(top, skirt, s = .85, face = "smile") {
   const p = person(null, 4, s, { top: plainTop(top), shorts: false, face });
-  const sk = mesh(new THREE.CylinderGeometry(.24, .3, .48, 8), flat(skirt), 0, .45, 0); p.g.add(sk);
+  const sk = mesh(new THREE.CylinderGeometry(.24, .3, .48, 12), kangaMat(skirt), 0, .45, 0); p.g.add(sk);
   const wrap = mesh(new THREE.IcosahedronGeometry(.2, 1), flat(skirt), 0, 1.6, -.05); wrap.scale.set(1.02, .42, 1); p.g.add(wrap);
   return p;
 }
@@ -748,32 +823,77 @@ const PROPS = {
     });
   },
   solar(g) {
-    const panel = mesh(new THREE.BoxGeometry(1.1, .05, .7), flat("#1e3a5f", { roughness: .3, metalness: .2 }), -.6, 1.15, -.3);
+    const panel = mesh(new THREE.BoxGeometry(1.1, .05, .7), flat("#1e3a5f", { roughness: .3, metalness: .2 }), -.15, 1.15, -1.3);
     panel.rotation.x = .6; g.add(panel);
-    g.add(mesh(new THREE.CylinderGeometry(.04, .04, 1.1, 6), flat("#888"), -.6, .55, -.3));
-    for (let k = 1; k < 4; k++) { const ln = mesh(new THREE.BoxGeometry(.012, .052, .7), flat("#9fb3c8"), -.6 - .55 + k * .275, 1.15, -.3); ln.rotation.x = .6; g.add(ln); }
+    g.add(mesh(new THREE.CylinderGeometry(.04, .04, 1.1, 6), flat("#888"), -.15, .55, -1.3));
+    for (let k = 1; k < 4; k++) { const ln = mesh(new THREE.BoxGeometry(.012, .052, .7), flat("#9fb3c8"), -.15 - .55 + k * .275, 1.15, -1.3); ln.rotation.x = .6; g.add(ln); }
     const solarSign = canvasTex(360, 120, (x, w, h) => {
       x.fillStyle = "#ffffff"; x.fillRect(0, 0, w, h);
       x.fillStyle = "#ff5515"; x.fillRect(0, 0, 14, h);
       x.fillStyle = "#111222"; x.font = '900 64px "Noto Sans TC", sans-serif'; x.textAlign = "center"; x.textBaseline = "middle";
       x.fillText("太陽能板", w / 2 + 7, h / 2 + 3);
     });
-    g.add(mesh(new THREE.PlaneGeometry(.6, .2), new THREE.MeshStandardMaterial({ map: solarSign, roughness: .8 }), -.6, .5, -.25));
-    const tower = new THREE.Group();
-    [[-.25, -.25], [.25, -.25], [-.25, .25], [.25, .25]].forEach(([x, z]) => tower.add(mesh(new THREE.BoxGeometry(.06, 1.3, .06), flat("#6d6a76"), x, .65, z)));
-    tower.add(mesh(new THREE.CylinderGeometry(.42, .42, .6, 12), flat("#9fd8ec", { roughness: .45 }), 0, 1.6, 0));
-    tower.add(mesh(new THREE.ConeGeometry(.45, .2, 12), flat("#6cc3e0"), 0, 2, 0));
+    g.add(mesh(new THREE.PlaneGeometry(.6, .2), new THREE.MeshStandardMaterial({ map: solarSign, roughness: .8 }), -.15, .5, -1.25));
+    // Elevated water tower like the field photo: steel lattice, ladder, white tank with an orange band.
+    const tower = new THREE.Group(), steel = flat("#d9dde0", { roughness: .4, metalness: .2 });
+    const H = 1.75, w = .26;
+    [[-w, -w], [w, -w], [-w, w], [w, w]].forEach(([x, z]) => tower.add(mesh(new THREE.BoxGeometry(.045, H, .045), steel, x, H / 2, z)));
+    for (let k = 0; k < 4; k++) {
+      const y = .25 + k * .42;
+      [[0, w, 0], [0, -w, 0], [w, 0, Math.PI / 2], [-w, 0, Math.PI / 2]].forEach(([x, z, ry]) => {
+        const h = mesh(new THREE.BoxGeometry(w * 2, .025, .025), steel, x, y, z); h.rotation.y = ry; tower.add(h);
+        const d = mesh(new THREE.BoxGeometry(Math.hypot(w * 2, .42), .02, .02), steel, x, y + .21, z); d.rotation.set(0, ry, Math.atan2(.42, w * 2)); tower.add(d);
+      });
+    }
+    tower.add(mesh(new THREE.BoxGeometry(.72, .04, .72), steel, 0, H, 0));
+    [[-.34, 0], [.34, 0]].forEach(([x]) => tower.add(mesh(new THREE.BoxGeometry(.02, .2, .72), steel, x, H + .1, 0)));
+    const ladder = new THREE.Group();
+    [-.07, .07].forEach(x => ladder.add(mesh(new THREE.BoxGeometry(.02, H + .1, .02), steel, x, (H + .1) / 2, 0)));
+    for (let y = .15; y < H; y += .16) ladder.add(mesh(new THREE.BoxGeometry(.14, .015, .015), steel, 0, y, 0));
+    ladder.position.set(-w - .08, 0, w + .02); ladder.rotation.z = -.08; tower.add(ladder);
+    tower.add(mesh(new THREE.CylinderGeometry(.34, .34, .5, 16), flat("#f6f4ef", { roughness: .5 }), 0, H + .3, 0));
+    tower.add(mesh(new THREE.CylinderGeometry(.345, .345, .22, 16), flat("#ef7a2c"), 0, H + .2, 0));
+    tower.add(mesh(new THREE.SphereGeometry(.34, 16, 6, 0, Math.PI * 2, 0, Math.PI / 2), flat("#f6f4ef"), 0, H + .55, 0));
     const plate = new THREE.MeshStandardMaterial({ map: logoTex(imgWhite, "#ff5515", 480, 170, .07), roughness: .7 });
-    tower.add(mesh(new THREE.PlaneGeometry(.66, .23), plate, 0, 1.6, .43));
-    tower.position.set(.6, 0, -.35); g.add(tower);
+    tower.add(mesh(new THREE.PlaneGeometry(.5, .17), plate, 0, H + .44, .345));
+    tower.add(mesh(new THREE.CylinderGeometry(.03, .03, H, 6), flat("#9aa3a8"), .18, H / 2, -.12));
+    tower.position.set(.6, 0, -.45); g.add(tower);
+    // Concrete water point fed by the tower: trough, brass standpipe filling a white bucket,
+    // and a mother kneeling beside it with a baby on her back.
+    const wp = new THREE.Group(), conc = flat("#c9b79c", { roughness: 1 });
+    wp.add(mesh(new THREE.BoxGeometry(1.2, .16, .34), conc, 0, .08, 0));
+    wp.add(mesh(new THREE.BoxGeometry(1.08, .02, .22), flat("#8fa9a3", { roughness: .2 }), 0, .155, 0));
+    const brass = flat("#b8935a", { metalness: .5, roughness: .35 });
+    wp.add(mesh(new THREE.CylinderGeometry(.025, .025, .72, 8), brass, .52, .4, -.12));
+    const arm = mesh(new THREE.CylinderGeometry(.022, .022, .18, 8), brass, .52, .76, -.04); arm.rotation.x = Math.PI / 2; wp.add(arm);
+    wp.add(mesh(new THREE.CylinderGeometry(.028, .022, .06, 8), brass, .52, .73, .05));
+    const bucketW = new THREE.Group();
+    bucketW.add(mesh(new THREE.CylinderGeometry(.13, .1, .22, 14), flat("#f4f4f2", { roughness: .4 }), 0, 0, 0));
+    bucketW.add(mesh(new THREE.CylinderGeometry(.12, .12, .01, 14), flat("#9fd8ec", { roughness: .15 }), 0, .07, 0));
+    const hdl = mesh(new THREE.TorusGeometry(.13, .006, 4, 12, Math.PI), flat("#6d6a76"), 0, .11, 0); hdl.rotation.y = Math.PI / 2; bucketW.add(hdl);
+    bucketW.position.set(.52, .27, .05); wp.add(bucketW);
+    const pour = mesh(new THREE.CylinderGeometry(.012, .012, .36, 6), flat("#bfe8f5", { transparent: true, opacity: .85, roughness: .1 }), .52, .53, .05); wp.add(pour);
+    const mom = villager("#2f5fb3", "#c45a2a", .78, "smile");
+    mom.legL.rotation.x = mom.legR.rotation.x = 1.45; mom.g.position.set(.12, -.42, .32); mom.g.rotation.y = -.15;
+    const baby = new THREE.Group();
+    baby.add(mesh(new THREE.IcosahedronGeometry(.11, 1), flat(SKIN[4]), 0, 0, 0));
+    baby.add(mesh(new THREE.SphereGeometry(.15, 10, 8), kangaMat("#8a3b2a"), 0, -.16, .02));
+    [-1, 1].forEach(sd => baby.add(mesh(new THREE.SphereGeometry(.018, 6, 4), flat("#111222"), sd * .04, .02, -.1)));
+    baby.position.set(.1, 1.3, -.2); mom.g.add(baby);
+    wp.add(mom.g);
+    wp.position.set(-.85, 0, .55); wp.rotation.y = .15; g.add(wp);
+    anim.push(t => {
+      mom.armL.rotation.set(-1.0, 0, .25); mom.armR.rotation.set(-1.0 + Math.sin(t * 1.5) * .06, 0, -.25);
+      pour.scale.y = 1 + Math.sin(t * 22) * .05; baby.rotation.y = Math.sin(t * .8) * .25;
+    });
     // Handwashing station fed by the tower, with a child washing up.
     const sink = new THREE.Group();
     sink.add(mesh(new THREE.BoxGeometry(.08, .95, .08), flat("#6d6a76"), 0, .47, -.14));
     sink.add(mesh(new THREE.CylinderGeometry(.2, .14, .14, 10), flat("#e9e7e3"), 0, .5, 0));
     const tap = mesh(new THREE.CylinderGeometry(.025, .025, .16, 6), flat("#b9b6ae"), 0, .86, -.07); tap.rotation.x = Math.PI / 2; sink.add(tap);
     const stream = mesh(new THREE.CylinderGeometry(.018, .018, .28, 6), flat("#9fd8ec", { transparent: true, opacity: .8, roughness: .2 }), 0, .71, .0);
-    sink.add(stream); sink.position.set(.15, 0, .75); g.add(sink);
-    g.add(signPost("洗手設備", .62, .95, .58));
+    sink.add(stream); sink.position.set(.65, 0, .65); g.add(sink);
+    g.add(signPost("洗手設備", 1.05, .3, .58));
     // African village: round huts with thatched roofs, an acacia and a stick fence.
     const hut = (x, z, r = .32) => {
       const h = new THREE.Group();
@@ -789,7 +909,7 @@ const PROPS = {
     const trunk = mesh(new THREE.CylinderGeometry(.04, .07, .9, 5), flat("#6b4a2f"), 0, .45, 0); trunk.rotation.z = .12; acacia.add(trunk);
     const crown = mesh(new THREE.CylinderGeometry(.62, .45, .14, 9), flat("#7e9a4a"), .08, .95, 0); acacia.add(crown);
     acacia.add(mesh(new THREE.CylinderGeometry(.42, .3, .1, 9), flat("#8fae55"), .1, 1.06, 0));
-    acacia.position.set(-1.5, 0, .35); g.add(acacia);
+    acacia.position.set(-1.55, 0, -.95); g.add(acacia);
     for (let k = 0; k < 9; k++) {
       const st = mesh(new THREE.CylinderGeometry(.015, .02, .3 + rand() * .08, 4), flat("#7b6650"), -.9 + k * .13, .15, -1.75 + Math.sin(k) * .03);
       st.rotation.z = (rand() - .5) * .2; g.add(st);
@@ -797,7 +917,7 @@ const PROPS = {
     g.add(mesh(new THREE.BoxGeometry(1.1, .02, .02), flat("#7b6650"), -.38, .24, -1.74));
     const pot = mesh(new THREE.SphereGeometry(.13, 8, 6), flat("#9a5a33"), -1.0, .1, -.45); pot.scale.y = .85; g.add(pot);
     const kid = localKid("#f2c14e", true);
-    kid.g.position.set(-.3, 0, .85); kid.g.rotation.y = Math.PI / 2 - .55; g.add(kid.g);
+    kid.g.position.set(.2, 0, .78); kid.g.rotation.y = Math.PI / 2 - .55; g.add(kid.g);
     anim.push(t => {
       kid.armL.rotation.set(-1.15 + Math.sin(t * 8) * .12, 0, .15); kid.armR.rotation.set(-1.15 - Math.sin(t * 8) * .12, 0, -.15);
       kid.legL.rotation.x = kid.legR.rotation.x = 0;
@@ -889,15 +1009,15 @@ const PROPS = {
     });
     const kids = [localKid("#e07a5f", false, "pain"), localKid("#8ccbe6", true, "pain"), localKid("#f2c14e", false, "pain")];
     kids.forEach((k, i) => {
-      if (i === 0) { const c = basin(1.05); c.position.y = 1.62; c.rotation.z = .06; k.g.add(c); }
-      else if (i === 1) { const c = brokenBucket(1.2, "#b5533c"); c.position.y = 1.72; c.rotation.z = -.05; k.g.add(c); }
-      else { const c = brokenBucket(1.05, "#5d8fb0"); c.position.y = -.7; k.armR.add(c); }
+      if (i === 0) { const c = basin(1.1, "#8a4fd1"); c.position.y = 1.62; c.rotation.z = .06; k.g.add(c); }
+      else if (i === 1) { const c = brokenBucket(1.2, "#ef7d4a"); c.position.y = 1.72; c.rotation.z = -.05; k.g.add(c); }
+      else { const c = jug(1.15); c.position.y = 1.78; k.g.add(c); }
       k.g.position.set(-.6 + i * .42, 0, .2 + (i % 2) * .15); g.add(k.g);
     });
     anim.push(t => kids.forEach((k, i) => {
       walk(k, t * 2.2 + i, .25);
-      if (i < 2) armsUp(k); else { k.armR.rotation.set(0, 0, .12); k.g.rotation.z = -.12; }
-      k.g.rotation.x = .1; k.g.rotation.z = (i < 2 ? Math.sin(t * 1.2 + i) * .06 : -.12);
+      armsUp(k);
+      k.g.rotation.x = .1; k.g.rotation.z = Math.sin(t * 1.2 + i) * .06;
     }));
   },
   school(g) {
@@ -1071,7 +1191,7 @@ const LAND = {
   "乾枯草原": { top: flat("#c8b07a"), side: flat("#a99160") },
   "有水的社區": { top: flat("#b5d184", { emissive: "#3a4a10", emissiveIntensity: .25 }), side: flat("#8d9e62") },
   "大佳河濱公園": { top: flat("#9cc06c"), side: flat("#7f9b57") },
-  "非洲村落": { top: flat("#d9a16c", { emissive: "#4a2a0a", emissiveIntensity: .2 }), side: flat("#a8704a") },
+  "非洲村落": { top: flat("#a9c06e", { emissive: "#2a3a0a", emissiveIntensity: .2 }), side: flat("#8d7a4f") },
 };
 const rockMat = flat("#9a9184"), deadWood = flat("#7b6650");
 function deadTree(x, z, h) {
@@ -1085,6 +1205,11 @@ function deadTree(x, z, h) {
 }
 // Rim dressing for each land type, kept outside the scene in the middle.
 function dress(g, land, r) {
+  if (land === "河岸水源") savanna(g, r, { hill: false });
+  if (land === "乾枯草原") savanna(g, r, { banana: false });
+  if (land === "荒漠石礫") savanna(g, r, { banana: false, baobab: false });
+  if (land === "乾裂土地") savanna(g, r, { banana: false });
+  if (land === "非洲村落") savanna(g, r, { hill: false, baobab: false });
   const rim = (k, n) => { const a = k / n * Math.PI * 2 + rand() * .3, rr = r * (.78 + rand() * .12); return [Math.cos(a) * rr, Math.sin(a) * rr]; };
   if (land === "沙丘") {
     for (let k = 0; k < 3; k++) { const [x, z] = rim(k + .5, 3); const d = mesh(new THREE.SphereGeometry(.7, 9, 5), LAND["沙丘"].top, x, -.05, z); d.scale.set(1.1, .32, .55); d.rotation.y = rand() * 3; g.add(d); }
