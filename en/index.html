@@ -617,11 +617,6 @@ function grassTuft(x, z, s = 1) {
   t.position.set(x, 0, z); t.scale.setScalar(s); return t;
 }
 function savanna(g, r, opts = {}) {
-  // red-earth footpath across the stop, stopping short of the sign corner
-  const path = flat("#b8673e", { roughness: 1 });
-  [[-.15, -r * .8, .2], [-.05, -r * .35, -.1], [.05, r * .1, .15]].forEach(([x, z, ry]) => {
-    const seg = mesh(new THREE.BoxGeometry(.5, .012, r * .55), path, x, .008, z); seg.rotation.y = ry; seg.castShadow = false; g.add(seg);
-  });
   // far hill at the back rim
   if (opts.hill !== false) { const h = mesh(new THREE.SphereGeometry(r * .5, 10, 6, 0, Math.PI * 2, 0, Math.PI / 2), flat("#a98a5e"), r * .15, 0, -r * .82); h.scale.set(1.5, .5, .5); h.castShadow = false; h.userData.tree = true; g.add(h);
     for (let k = 0; k < 4; k++) g.add(mesh(new THREE.BoxGeometry(r * .5, .02, .06), flat("#7f9a4a"), r * .15 + (k - 1.5) * .05, .12 + k * .08, -r * .66 + k * .03)); }
