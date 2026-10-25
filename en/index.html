@@ -86,7 +86,7 @@ body {
 .tools button[aria-pressed="true"] { background: var(--ink); color: var(--paper); }
 button:focus-visible, a:focus-visible, .pill:focus-visible { outline: 2px solid var(--orange); outline-offset: 2px; }
 
-#labels { position: fixed; inset: 0; pointer-events: none; z-index: 2; }
+#labels { display: none; }
 .pill {
   position: absolute; left: 0; top: 0; pointer-events: auto; cursor: pointer;
   border: 0; background: var(--paper); color: var(--ink);
@@ -730,9 +730,6 @@ const PROPS = {
       bib(p); p.g.position.set(x, 0, z); p.g.rotation.x = .2; g.add(p.g); pack.push(p);
       for (let j = 0; j < 2; j++) { const d = puff(); d.position.set(x, .06, z - .25); g.add(d); dust.push({ d, k, j }); }
     });
-    // Finish tape ahead of the pack.
-    [-1.05, 1.05].forEach(x => g.add(mesh(new THREE.BoxGeometry(.06, .9, .06), flat("#6d6a76"), x, .45, 1.15)));
-    const tape = mesh(new THREE.BoxGeometry(2.1, .06, .01), flat("#ff5515"), 0, .82, 1.15); g.add(tape);
     for (let z = -.9; z <= .9; z += .45) { g.add(cone(-1.2, z, .9)); g.add(cone(1.2, z, .9)); }
     anim.push(t => {
       pack.forEach((p, k) => {
@@ -746,7 +743,6 @@ const PROPS = {
         d.scale.setScalar(.5 + f * 1.6); d.material.opacity = .65 * (1 - f);
         d.position.z = spots[k][1] - .25 - f * .45; d.position.y = .05 + f * .12;
       });
-      tape.rotation.x = Math.sin(t * 3) * .15;
     });
   },
   solar(g) {
@@ -1172,6 +1168,30 @@ ISLANDS.forEach((d, i) => {
       halo.material.opacity = .45 + Math.sin(t * 1.2) * .1;
     });
   }
+  // Ground sign at the front edge of every stop: large, two-sided, in the group colour.
+  {
+    const G = GROUPS[d.grp], parts = d.name.split("："), big = parts[parts.length - 1], small = parts.length > 1 ? parts[0] : G.label;
+    const bw = i === 0 ? 2.6 : 2.2, bh = .62, TW = 1024, TH = Math.round(TW * bh / bw);
+    const fill = d.grp === "start" ? "#ff5515" : G.c;
+    const tex = canvasTex(TW, TH, (x, w, h) => {
+      x.fillStyle = fill; x.fillRect(0, 0, w, h);
+      x.fillStyle = "rgba(255,255,255,.18)"; x.fillRect(0, h - 14, w, 14);
+      x.fillStyle = "#ffffff"; x.textAlign = "center"; x.textBaseline = "middle";
+      x.font = '700 40px "Noto Sans TC", Inter, sans-serif'; x.globalAlpha = .9; x.fillText(small, w / 2, h * .25); x.globalAlpha = 1;
+      let fs = 150; x.font = `900 ${fs}px "Noto Sans TC", Inter, sans-serif`;
+      while (x.measureText(big).width > w * .9 && fs > 60) { fs -= 6; x.font = `900 ${fs}px "Noto Sans TC", Inter, sans-serif`; }
+      x.fillText(big, w / 2, h * .62);
+    });
+    const sign = new THREE.Group(), mat = new THREE.MeshBasicMaterial({ map: tex });
+    const front = new THREE.Mesh(new THREE.PlaneGeometry(bw, bh), mat); front.position.set(0, .12 + bh / 2, .03);
+    const back = new THREE.Mesh(new THREE.PlaneGeometry(bw, bh), mat); back.position.set(0, .12 + bh / 2, -.03); back.rotation.y = Math.PI;
+    const frame = mesh(new THREE.BoxGeometry(bw + .08, bh + .08, .05), flat("#ffffff"), 0, .12 + bh / 2, 0);
+    sign.add(frame, front, back);
+    [-bw * .42, bw * .42].forEach(px => sign.add(mesh(new THREE.BoxGeometry(.07, .16, .07), flat("#6d6a76"), px, .08, 0)));
+    [front, back, frame].forEach(m => { m.userData.idx = i; pickable.push(m); });
+    sign.position.set(0, 0, r * (i === 0 ? .8 : .78)); sign.rotation.x = -.55;
+    props.add(sign);
+  }
   dress(props, d.land, r);
   props.rotation.y = Math.atan2(view.x, view.z);
   g.add(props);
@@ -1397,7 +1417,7 @@ function select(i) {
   current = i; controls.autoRotate = false;
   const { g } = islands[i];
   const narrow = camera.aspect < .8;
-  const t = new THREE.Vector3(g.position.x, narrow ? -.8 : .9, g.position.z);
+  const t = new THREE.Vector3(g.position.x, narrow ? -.8 : .9, g.position.z).addScaledVector(islands[i].view, i === 0 ? 1.3 : .7);
   // Stand on the course and look at the stop.
   const dir = islands[i].view;
   const off = new THREE.Vector3(dir.x * 5, 2.7, dir.z * 5).multiplyScalar(narrow ? 1.75 : 1);
