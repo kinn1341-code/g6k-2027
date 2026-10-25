@@ -710,6 +710,7 @@ function textSign(text, bg, fg, w = 360, h = 120, size = 46) {
     x.fillStyle = bg; x.fillRect(0, 0, w, h);
     x.fillStyle = "#ff5515"; x.fillRect(0, 0, 14, h);
     x.fillStyle = fg; x.font = `900 ${size}px "Noto Sans TC", Inter, sans-serif`; x.textAlign = "center"; x.textBaseline = "middle";
+    while (size > 20 && x.measureText(text).width > w - 44) { size -= 2; x.font = `900 ${size}px "Noto Sans TC", Inter, sans-serif`; }
     x.fillText(text, w / 2 + 7, h / 2 + 3);
   });
 }
@@ -752,6 +753,21 @@ function signPost(text, x, z, wd = .55) {
   const sp = new THREE.Group();
   sp.add(mesh(new THREE.CylinderGeometry(.025, .025, .7, 6), flat("#6d6a76"), 0, .35, 0));
   sp.add(mesh(new THREE.PlaneGeometry(wd, wd / 3), new THREE.MeshStandardMaterial({ map: textSign(text, "#ffffff", "#111222"), roughness: .8, side: THREE.DoubleSide }), 0, .72, .03));
+  sp.position.set(x, 0, z); return sp;
+}
+// Clickable orange "learn more" board: opens a page in a new tab when tapped.
+const linkPick = [];
+function linkSign(text, url, x, z, wd = .62) {
+  const sp = new THREE.Group();
+  sp.add(mesh(new THREE.CylinderGeometry(.025, .025, .7, 6), flat("#6d6a76"), 0, .35, 0));
+  const tex = canvasTex(360, 120, (c, w, h) => {
+    c.fillStyle = "#ff5515"; c.fillRect(0, 0, w, h);
+    c.strokeStyle = "#ffffff"; c.lineWidth = 6; c.strokeRect(8, 8, w - 16, h - 16);
+    c.fillStyle = "#ffffff"; c.font = '900 54px "Noto Sans TC", Inter, sans-serif'; c.textAlign = "center"; c.textBaseline = "middle";
+    c.fillText(text, w / 2, h / 2 + 3);
+  });
+  const board = mesh(new THREE.PlaneGeometry(wd, wd / 3), new THREE.MeshStandardMaterial({ map: tex, roughness: .7, side: THREE.DoubleSide }), 0, .72, .03);
+  board.userData.url = url; linkPick.push(board); sp.add(board);
   sp.position.set(x, 0, z); return sp;
 }
 function puff() {
@@ -869,9 +885,10 @@ const PROPS = {
       x.fillStyle = "#ffffff"; x.fillRect(0, 0, w, h);
       x.fillStyle = "#ff5515"; x.fillRect(0, 0, 14, h);
       x.fillStyle = "#111222"; x.font = '900 64px "Noto Sans TC", sans-serif'; x.textAlign = "center"; x.textBaseline = "middle";
-      x.font = '900 50px Inter, sans-serif'; x.fillText("Solar panel", w / 2 + 7, h / 2 + 3);
+      x.font = '900 50px Inter, sans-serif'; x.fillText("Solar water system", w / 2 + 7, h / 2 + 3);
     });
-    g.add(signPost("Solar panel", -.5, -.6, .62));
+    g.add(signPost("Solar water system", -.5, -.6, .85));
+    g.add(linkSign("Learn more ↗", "https://www.worldvision.org.tw/donations/20", -1.4, -.6));
     // Elevated water tower like the field photo: steel lattice, ladder, white tank with an orange band.
     const tower = new THREE.Group(), steel = flat("#d9dde0", { roughness: .4, metalness: .2 });
     const H = 1.75, w = .26;
@@ -1074,6 +1091,7 @@ const PROPS = {
     });
     sch.add(mesh(new THREE.PlaneGeometry(.56, .17), new THREE.MeshStandardMaterial({ map: schoolTex, roughness: .8 }), 0, .78, .362));
     sch.position.set(-.45, 0, -1.0); g.add(sch);
+    g.add(linkSign("Learn more ↗", "https://www.worldvision.org.tw/donations/20", -1.55, -.35));
     // School water tank with the World Vision plate and a drinking tap.
     const tank = new THREE.Group();
     [[-.18, -.18], [.18, -.18], [-.18, .18], [.18, .18]].forEach(([x, z]) => tank.add(mesh(new THREE.BoxGeometry(.05, .8, .05), flat("#6d6a76"), x, .4, z)));
@@ -1627,13 +1645,14 @@ renderer.domElement.addEventListener("pointerup", e => {
   if (!down || Math.hypot(e.clientX - down[0], e.clientY - down[1]) > 6) return;
   ndc.set(e.clientX / innerWidth * 2 - 1, -(e.clientY / innerHeight) * 2 + 1);
   ray.setFromCamera(ndc, camera);
-  const hit = ray.intersectObjects(pickable)[0];
+  const hit = ray.intersectObjects([...pickable, ...linkPick])[0];
+  if (hit && hit.object.userData.url) { window.open(hit.object.userData.url, "_blank", "noopener"); return; }
   if (hit) select(hit.object.userData.idx);
 });
 renderer.domElement.addEventListener("pointermove", e => {
   ndc.set(e.clientX / innerWidth * 2 - 1, -(e.clientY / innerHeight) * 2 + 1);
   ray.setFromCamera(ndc, camera);
-  renderer.domElement.style.cursor = ray.intersectObjects(pickable).length ? "pointer" : "grab";
+  renderer.domElement.style.cursor = ray.intersectObjects([...pickable, ...linkPick]).length ? "pointer" : "grab";
 });
 
 function resize() {
