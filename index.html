@@ -252,7 +252,7 @@ const ISLANDS = [
   { grp: "race", kind: "報名組別", land: "沙丘", eb: "", name: "一般體驗組", sk: "歡迎與家人、朋友、同事一起報名", tags: ["NT$700", "1+1 揪伴 · 限額 2,800 人"], obj: "runner",
     cues: ["你報名，再揪一位家人、朋友或同事，一起為孩子跑 6 公里。",
            "報名包含跑衣、號碼布；完賽後有雷雕姓名的專屬獎牌。"] },
-  { grp: "race", kind: "報名組別", land: "石礫地", eb: "", name: "負重挑戰組", sk: "黃色 Jerry Can 裝滿水，真實感受提水的重量", tags: ["NT$850", "1 帶 1 · 限額 200 人"], obj: "jerry",
+  { grp: "race", kind: "報名組別", land: "沙丘", eb: "", name: "負重挑戰組", sk: "黃色 Jerry Can 裝滿水，真實感受提水的重量", tags: ["NT$850", "1 帶 1 · 限額 200 人"], obj: "jerry",
     cues: ["今年在黃色 Jerry Can 水桶裡裝水，每一步都能感受提水的重量與不易。",
            "1 帶 1：邀請一位夥伴一起提起水桶、走完 6K，把孩子的取水路化為改變的力量。",
            "限額 200 人；水桶當天現場領取、賽後歸還，報名權益與一般體驗組相同。"] },
@@ -637,11 +637,19 @@ function savanna(g, r, opts = {}) {
   if (opts.baobab !== false) g.add(baobab(-r * .62, -r * .48, .9));
   if (opts.banana !== false) g.add(banana(r * .55, -r * .5, .9));
 }
-function villager(top, skirt, s = .85, face = "smile") {
+function villager(top, skirt, s = .85, face = "smile", wrap = true) {
   const p = person(null, 4, s, { top: plainTop(top), shorts: false, face });
   const sk = mesh(new THREE.CylinderGeometry(.24, .3, .48, 12), kangaMat(skirt), 0, .45, 0); p.g.add(sk);
-  const wrap = mesh(new THREE.IcosahedronGeometry(.2, 1), flat(skirt), 0, 1.6, -.05); wrap.scale.set(1.02, .42, 1); p.g.add(wrap);
+  if (wrap) { const w = mesh(new THREE.IcosahedronGeometry(.2, 1), flat(skirt), 0, 1.6, -.05); w.scale.set(1.02, .42, 1); p.g.add(w); }
   return p;
+}
+function babyOnBack(p, cloth = "#8a3b2a") {
+  const baby = new THREE.Group();
+  baby.add(mesh(new THREE.IcosahedronGeometry(.11, 1), flat(SKIN[4]), 0, 0, 0));
+  baby.add(mesh(new THREE.IcosahedronGeometry(.115, 1), flat("#1d1a1a"), 0, .04, .01));
+  baby.add(mesh(new THREE.SphereGeometry(.16, 10, 8), kangaMat(cloth), 0, -.17, .03));
+  baby.position.set(.0, 1.28, -.2); p.g.add(baby);
+  return baby;
 }
 function dog() {
   const d = new THREE.Group(), fur = flat("#8a6a48"), dark = flat("#4a3826");
@@ -712,7 +720,7 @@ function textSign(text, bg, fg, w = 360, h = 120, size = 64) {
 }
 // Wooden arrow signpost, like a trail marker: grained plank, arrow tip, dark burnt-in lettering.
 function woodSign(big, small, bw = 1.15, bh = .34, postH = .5) {
-  const TW = 1024, TH = Math.round(TW * bh / bw), tip = .16;
+  const TW = 1024, TH = Math.round(TW * bh / bw), tip = 0;
   const tex = canvasTex(TW, TH, (x, w, h) => {
     const gr = x.createLinearGradient(0, 0, 0, h); gr.addColorStop(0, "#e2b66a"); gr.addColorStop(1, "#c9964c");
     x.fillStyle = gr; x.fillRect(0, 0, w, h);
@@ -722,14 +730,14 @@ function woodSign(big, small, bw = 1.15, bh = .34, postH = .5) {
     x.strokeStyle = "rgba(90,55,20,.5)"; x.lineWidth = 6; x.strokeRect(3, 3, w - 6, h - 6);
     const tw = w * (1 - tip);
     x.fillStyle = "#2e1604"; x.strokeStyle = "#2e1604"; x.lineJoin = "round"; x.textAlign = "center"; x.textBaseline = "middle";
-    if (small) { x.font = '700 44px "Noto Sans TC", Inter, sans-serif'; x.globalAlpha = .8; x.fillText(small, tw / 2, h * .24); x.globalAlpha = 1; }
-    let fs = small ? 140 : 170; x.font = `900 ${fs}px "Noto Sans TC", Inter, sans-serif`;
-    while (x.measureText(big).width > tw * .88 && fs > 50) { fs -= 6; x.font = `900 ${fs}px "Noto Sans TC", Inter, sans-serif`; }
+    if (small) { x.font = '700 34px "Noto Sans TC", Inter, sans-serif'; x.globalAlpha = .8; x.fillText(small, tw / 2, h * .24); x.globalAlpha = 1; }
+    let fs = small ? 108 : 130; x.font = `900 ${fs}px "Noto Sans TC", Inter, sans-serif`;
+    while (x.measureText(big).width > tw * .8 && fs > 40) { fs -= 6; x.font = `900 ${fs}px "Noto Sans TC", Inter, sans-serif`; }
     x.lineWidth = Math.max(3, fs * .05); x.strokeText(big, tw / 2, small ? h * .62 : h * .54); x.fillText(big, tw / 2, small ? h * .62 : h * .54);
   });
   // arrow-shaped plank with UVs mapped to the texture
   const sh = new THREE.Shape(), L = -bw / 2, R = bw / 2, T = bh / 2, B = -bh / 2, Rt = R - bw * tip;
-  sh.moveTo(L, B); sh.lineTo(Rt, B); sh.lineTo(R, 0); sh.lineTo(Rt, T); sh.lineTo(L, T); sh.lineTo(L, B);
+  sh.moveTo(L, B); sh.lineTo(R, B); sh.lineTo(R, T); sh.lineTo(L, T); sh.lineTo(L, B);
   const face = new THREE.ShapeGeometry(sh), pos = face.attributes.position, uv = [];
   for (let k = 0; k < pos.count; k++) uv.push((pos.getX(k) - L) / bw, (pos.getY(k) - B) / bh);
   face.setAttribute("uv", new THREE.Float32BufferAttribute(uv, 2));
@@ -739,12 +747,16 @@ function woodSign(big, small, bw = 1.15, bh = .34, postH = .5) {
   const f = new THREE.Mesh(face, mat); f.position.z = .021;
   const b = new THREE.Mesh(face, mat); b.position.z = -.021; b.rotation.y = Math.PI;
   board.add(edge, f, b); board.position.y = postH + bh / 2 - .06; board.rotation.x = -.38;
-  const post = mesh(new THREE.BoxGeometry(.07, postH + bh, .07), flat("#8a5a2b"), -bw * .1, (postH + bh) / 2 - .02, -.03);
-  g.add(post, board); g.userData.faces = [f, b, edge];
+  // two short legs behind the board, ending below its top edge so they never cross the lettering
+  const legH = postH + bh * .35;
+  [-bw * .36, bw * .36].forEach(px => g.add(mesh(new THREE.BoxGeometry(.06, legH, .06), flat("#8a5a2b"), px, legH / 2 - .02, -.07)));
+  g.add(board); g.userData.faces = [f, b, edge];
   return g;
 }
 function signPost(text, x, z, wd = .55) {
-  const sp = woodSign(text, "", wd * 1.25, wd * .38, .55);
+  const sp = new THREE.Group();
+  sp.add(mesh(new THREE.CylinderGeometry(.025, .025, .7, 6), flat("#6d6a76"), 0, .35, 0));
+  sp.add(mesh(new THREE.PlaneGeometry(wd, wd / 3), new THREE.MeshStandardMaterial({ map: textSign(text, "#ffffff", "#111222"), roughness: .8, side: THREE.DoubleSide }), 0, .72, .03));
   sp.position.set(x, 0, z); return sp;
 }
 function puff() {
@@ -985,13 +997,15 @@ const PROPS = {
     });
   },
   women(g) {
-    // Two girls walk close together; a third walks alone behind them.
-    const pair = [villager("#e07a5f", "#3d5a80", .66, "cry"), villager("#f2c14e", "#c43b2b", .62, "cry")];
-    pair.forEach((v, k) => {
-      const jc = brokenBucket(.95, k ? "#7f9a5a" : "#5d8fb0"); jc.position.y = -.68; (k ? v.armR : v.armL).add(jc);
-      v.g.position.set(-.45 + k * .32, 0, .4); g.add(v.g);
-    });
-    const girl = villager("#8ccbe6", "#6d6a76", .6, "cry");
+    // A woman with a baby on her back and a girl carry water together; another girl walks alone behind.
+    const mom = villager("#e07a5f", "#3d5a80", .86, "cry", false);
+    const mb = brokenBucket(1.05, "#5d8fb0"); mb.position.y = -.68; mom.armR.add(mb);
+    const baby = babyOnBack(mom, "#c43b2b");
+    mom.g.position.set(-.5, 0, .35); g.add(mom.g);
+    const girl1 = villager("#f2c14e", "#c43b2b", .6, "cry", false);
+    const gb = brokenBucket(1.05, "#7f9a5a"); gb.position.y = 1.72; girl1.g.add(gb);
+    girl1.g.position.set(-.05, 0, .45); g.add(girl1.g);
+    const girl = villager("#8ccbe6", "#6d6a76", .58, "cry", false);
     const gc = brokenBucket(.9, "#c9a33a"); gc.position.y = -.66; girl.armR.add(gc);
     girl.g.position.set(.75, 0, -.75); girl.g.rotation.y = -.4; g.add(girl.g);
     for (let k = 0; k < 26; k++) {
@@ -1000,9 +1014,9 @@ const PROPS = {
     }
     [[-1.35, -.6], [1.4, .55]].forEach(([x, z]) => { const b = mesh(new THREE.IcosahedronGeometry(.28, 0), flat("#8a8f4e"), x, .22, z); b.scale.y = .7; g.add(b); });
     anim.push(t => {
-      pair.forEach((v, k) => { walk(v, t * 3 + k * .5, .3); v.g.position.y = Math.abs(Math.sin(t * 3 + k * .5)) * .02; });
-      pair[0].armR.rotation.set(0, 0, .45); pair[1].armL.rotation.set(0, 0, -.45);
-      pair[0].armL.rotation.z = -.15; pair[1].armR.rotation.z = .15;
+      walk(mom, t * 2.6, .28); mom.armR.rotation.set(0, 0, .14); mom.armL.rotation.set(-.2, 0, -.15);
+      mom.g.position.y = Math.abs(Math.sin(t * 2.6)) * .02; baby.rotation.y = Math.sin(t * .9) * .2;
+      walk(girl1, t * 2.6 + .6, .28); armsUp(girl1); girl1.g.rotation.z = Math.sin(t * 1.3) * .05;
       walk(girl, t * 3.4, .35); girl.armR.rotation.set(0, 0, .15); girl.armL.rotation.set(-2.3, 0, .25);
     });
   },
@@ -1039,6 +1053,7 @@ const PROPS = {
       c.position.set(x, 0, z); g.add(c);
     });
     const kids = [localKid("#e07a5f", false, "pain"), localKid("#8ccbe6", true, "pain"), localKid("#f2c14e", false, "pain")];
+    [.74, .52, .63].forEach((sc, i) => kids[i].g.scale.setScalar(sc));
     kids.forEach((k, i) => {
       if (i === 0) { const c = basin(1.1, "#8a4fd1"); c.position.y = 1.62; c.rotation.z = .06; k.g.add(c); }
       else if (i === 1) { const c = brokenBucket(1.2, "#ef7d4a"); c.position.y = 1.72; c.rotation.z = -.05; k.g.add(c); }
@@ -1053,17 +1068,17 @@ const PROPS = {
   },
   school(g) {
     const sch = new THREE.Group();
-    sch.add(mesh(new THREE.BoxGeometry(1.4, .7, .7), flat("#f3ead8"), 0, .35, 0));
-    const roof = mesh(new THREE.CylinderGeometry(.5, .5, 1.5, 3), flat("#ff5515"), 0, .82, 0); roof.rotation.z = Math.PI / 2; roof.scale.set(1, 1, .9); sch.add(roof);
-    sch.add(mesh(new THREE.BoxGeometry(.26, .44, .02), flat("#0c7993"), 0, .22, .36));
-    [-.45, .45].forEach(x => sch.add(mesh(new THREE.BoxGeometry(.26, .2, .02), flat("#9fd8ec"), x, .42, .36)));
+    sch.add(mesh(new THREE.BoxGeometry(1.5, 1.15, .7), flat("#f3ead8"), 0, .575, 0));
+    const roof = mesh(new THREE.CylinderGeometry(.5, .5, 1.5, 3), flat("#ff5515"), 0, 1.3, 0); roof.rotation.z = Math.PI / 2; roof.scale.set(1, 1.07, .9); sch.add(roof);
+    sch.add(mesh(new THREE.BoxGeometry(.28, .5, .02), flat("#0c7993"), 0, .25, .36));
+    [-.48, .48].forEach(x => { sch.add(mesh(new THREE.BoxGeometry(.28, .24, .02), flat("#9fd8ec"), x, .45, .36)); sch.add(mesh(new THREE.BoxGeometry(.28, .24, .02), flat("#9fd8ec"), x, .85, .36)); });
     const pole = mesh(new THREE.CylinderGeometry(.02, .02, 1.2, 6), flat("#6d6a76"), .85, .6, .15); sch.add(pole);
     const schoolTex = canvasTex(300, 90, (x, w, h) => {
       x.fillStyle = "#ffffff"; x.fillRect(0, 0, w, h); x.strokeStyle = "#0c7993"; x.lineWidth = 8; x.strokeRect(4, 4, w - 8, h - 8);
       x.fillStyle = "#111222"; x.font = "900 58px Inter, Arial, sans-serif"; x.textAlign = "center"; x.textBaseline = "middle"; x.fillText("School", w / 2, h / 2 + 3);
     });
-    sch.add(mesh(new THREE.PlaneGeometry(.56, .17), new THREE.MeshStandardMaterial({ map: schoolTex, roughness: .8 }), 0, .6, .362));
-    sch.position.set(-.45, 0, -.6); g.add(sch);
+    sch.add(mesh(new THREE.PlaneGeometry(.56, .17), new THREE.MeshStandardMaterial({ map: schoolTex, roughness: .8 }), 0, .78, .362));
+    sch.position.set(-.45, 0, -1.0); g.add(sch);
     // School water tank with the World Vision plate and a drinking tap.
     const tank = new THREE.Group();
     [[-.18, -.18], [.18, -.18], [-.18, .18], [.18, .18]].forEach(([x, z]) => tank.add(mesh(new THREE.BoxGeometry(.05, .8, .05), flat("#6d6a76"), x, .4, z)));
