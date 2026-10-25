@@ -745,7 +745,7 @@ function woodSign(big, small, bw = 1.15, bh = .34, postH = .5) {
   board.add(edge, f, b); board.position.y = postH + bh / 2 - .06; board.rotation.x = -.38;
   // two short legs behind the board, ending below its top edge so they never cross the lettering
   const legH = postH + bh * .35;
-  [-bw * .36, bw * .36].forEach(px => g.add(mesh(new THREE.BoxGeometry(.06, legH, .06), flat("#8a5a2b"), px, legH / 2 - .02, -.07)));
+  g.add(mesh(new THREE.BoxGeometry(.07, legH, .07), flat("#8a5a2b"), 0, legH / 2 - .02, -.07));
   g.add(board); g.userData.faces = [f, b, edge];
   return g;
 }
@@ -1366,12 +1366,14 @@ ISLANDS.forEach((d, i) => {
     const G = GROUPS[d.grp], parts = d.name.split("："), big = parts[parts.length - 1], small = parts.length > 1 ? parts[0] : G.label;
     const sign = woodSign(big, small, 1.25, .36, .42);
     sign.userData.faces.forEach(m => { m.userData.idx = i; pickable.push(m); });
-    sign.position.set(r * .62, 0, r * .62); sign.rotation.y = -.4;
+    // The school stop keeps its sign on the left so it doesn't cover the toilet block.
+    const side = d.obj === "school" ? -1 : 1;
+    sign.position.set(side > 0 ? r * .62 : -r * .5, 0, r * .62); sign.rotation.y = -.4 * side;
     sign.userData.isSign = true; props.add(sign);
   }
   dress(props, d.land, r);
-  // Keep the sign's corner clear of rim trees and rocks.
-  if (i !== 0) { const sx = r * .62, sz = r * .62; props.children.slice().forEach(c => { if (Math.hypot(c.position.x - sx, c.position.z - sz) < .75 && !c.userData.isSign) props.remove(c); }); }
+  // Keep the sign's corner clear of rim trees and rocks (at the school, both front corners stay clear).
+  if (i !== 0) { const corners = d.obj === "school" ? [[-r * .5, r * .62], [r * .62, r * .62]] : [[r * .62, r * .62]]; props.children.slice().forEach(c => { if (!c.userData.isSign && corners.some(([sx, sz]) => Math.hypot(c.position.x - sx, c.position.z - sz) < .75)) props.remove(c); }); }
   props.rotation.y = Math.atan2(view.x, view.z);
   g.add(props);
   scene.add(g);
