@@ -895,7 +895,7 @@ const PROPS = {
       x.fillText("太陽能供水系統", w / 2 + 7, h / 2 + 3);
     });
     g.add(signPost("太陽能供水系統", -.5, -.6, .85));
-    g.add(groundLink("了解更多世界展望會", "https://www.worldvision.org.tw/donations/20", .15, 1.4));
+    g.add(groundLink("認識水資源計畫", "https://www.worldvision.org.tw/donations/20", .15, 1.4));
     // Elevated water tower like the field photo: steel lattice, ladder, white tank with an orange band.
     const tower = new THREE.Group(), steel = flat("#d9dde0", { roughness: .4, metalness: .2 });
     const H = 1.75, w = .26;
@@ -1107,7 +1107,7 @@ const PROPS = {
     main.position.set(-.3, 0, -1.15); g.add(main);
     const west = block(.9, .55, 2); west.position.set(-1.55, 0, -.55); west.rotation.y = .7; g.add(west);
     const east = block(.9, .55, 2); east.position.set(1.15, 0, -.85); east.rotation.y = -.55; g.add(east);
-    g.add(groundLink("了解更多世界展望會", "https://www.worldvision.org.tw/donations/20", .15, 1.4));
+    g.add(groundLink("認識水資源計畫", "https://www.worldvision.org.tw/donations/20", .15, 1.4));
     // School water tank with the World Vision plate and a drinking tap.
     const tank = new THREE.Group();
     [[-.18, -.18], [.18, -.18], [-.18, .18], [.18, .18]].forEach(([x, z]) => tank.add(mesh(new THREE.BoxGeometry(.05, .8, .05), flat("#6d6a76"), x, .4, z)));
@@ -1115,9 +1115,9 @@ const PROPS = {
     tank.add(mesh(new THREE.PlaneGeometry(.5, .17), new THREE.MeshStandardMaterial({ map: logoTex(imgWhite, "#ff5515", 420, 150, .07), roughness: .7 }), 0, 1.04, .33));
     tank.add(mesh(new THREE.BoxGeometry(.04, .04, .14), flat("#b9b6ae"), 0, .5, .2));
     tank.position.set(-1.3, 0, .35); tank.rotation.y = .35; g.add(tank);
-    const drinker = localKid("#f2c14e", true);
-    drinker.g.position.set(-.75, 0, .75); drinker.g.rotation.y = .1; drinker.g.userData.keep = true; g.add(drinker.g);
-    const cup = mesh(new THREE.CylinderGeometry(.06, .05, .12, 8), flat("#9fd8ec"), 0, -.55, .02); drinker.armR.add(cup);
+    // A girl in a wrap skirt waving beside the toilet block.
+    const drinker = villager("#f2c14e", "#c43b2b", .6, "smile", false);
+    drinker.g.position.set(.75, 0, 1.0); drinker.g.rotation.y = -.35; drinker.g.userData.keep = true; g.add(drinker.g);
     // A handwashing station with a boy washing up.
     const wash = new THREE.Group();
     wash.add(mesh(new THREE.BoxGeometry(.7, .1, .22), flat("#d3d0c9"), 0, .5, 0));
@@ -1156,7 +1156,7 @@ const PROPS = {
       washer.armL.rotation.set(-1.3 + Math.sin(t * 9) * .15, 0, -.2); washer.armR.rotation.set(-1.3 - Math.sin(t * 9) * .15, 0, .2);
       streams.forEach((st, k) => { st.scale.y = 1 + Math.sin(t * 20 + k) * .06; });
       bubbles.forEach((bb, k) => { const f = (t * .6 + k / 5) % 1; bb.position.set(-.27, .6 + f * .5, .47 + Math.sin(k * 2.1 + t) * .12); bb.material.opacity = .8 * (1 - f); });
-      drinker.armR.rotation.set(-2.2 + Math.sin(t * 1.5) * .15, 0, .45); drinker.armL.rotation.set(0, 0, -2.5 + Math.sin(t * 5) * .2);
+      drinker.armR.rotation.set(0, 0, .15); drinker.armL.rotation.set(0, 0, -2.5 + Math.sin(t * 5) * .2);
       drinker.g.position.y = Math.abs(Math.sin(t * 2.5)) * .03;
     });
   },
