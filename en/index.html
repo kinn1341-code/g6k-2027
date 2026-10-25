@@ -1274,7 +1274,7 @@ function dress(g, land, r) {
   if (land === "河岸水源") savanna(g, r, { hill: false });
   if (land === "乾枯草原") savanna(g, r, { banana: false });
   if (land === "荒漠石礫") savanna(g, r, { banana: false, baobab: false });
-  if (land === "乾裂土地") savanna(g, r, { banana: false });
+  if (land === "乾裂土地") savanna(g, r, { banana: false, hill: false });
   if (land === "非洲村落") savanna(g, r, { hill: false, baobab: false });
   const rim = (k, n) => { const a = k / n * Math.PI * 2 + rand() * .3, rr = r * (.78 + rand() * .12); return [Math.cos(a) * rr, Math.sin(a) * rr]; };
   if (land === "沙丘") {
