@@ -1168,10 +1168,10 @@ ISLANDS.forEach((d, i) => {
       halo.material.opacity = .45 + Math.sin(t * 1.2) * .1;
     });
   }
-  // Ground sign at the front edge of every stop: large, two-sided, in the group colour.
-  {
+  // Small ground sign at the front-left corner of each stop (not the start), clear of the runners.
+  if (i !== 0) {
     const G = GROUPS[d.grp], parts = d.name.split("："), big = parts[parts.length - 1], small = parts.length > 1 ? parts[0] : G.label;
-    const bw = i === 0 ? 2.6 : 2.2, bh = .62, TW = 1024, TH = Math.round(TW * bh / bw);
+    const bw = 1.0, bh = .28, TW = 1024, TH = Math.round(TW * bh / bw);
     const fill = d.grp === "start" ? "#ff5515" : G.c;
     const tex = canvasTex(TW, TH, (x, w, h) => {
       x.fillStyle = fill; x.fillRect(0, 0, w, h);
@@ -1183,16 +1183,18 @@ ISLANDS.forEach((d, i) => {
       x.fillText(big, w / 2, h * .62);
     });
     const sign = new THREE.Group(), mat = new THREE.MeshBasicMaterial({ map: tex });
-    const front = new THREE.Mesh(new THREE.PlaneGeometry(bw, bh), mat); front.position.set(0, .12 + bh / 2, .03);
-    const back = new THREE.Mesh(new THREE.PlaneGeometry(bw, bh), mat); back.position.set(0, .12 + bh / 2, -.03); back.rotation.y = Math.PI;
-    const frame = mesh(new THREE.BoxGeometry(bw + .08, bh + .08, .05), flat("#ffffff"), 0, .12 + bh / 2, 0);
+    const front = new THREE.Mesh(new THREE.PlaneGeometry(bw, bh), mat); front.position.set(0, .1 + bh / 2, .02);
+    const back = new THREE.Mesh(new THREE.PlaneGeometry(bw, bh), mat); back.position.set(0, .1 + bh / 2, -.02); back.rotation.y = Math.PI;
+    const frame = mesh(new THREE.BoxGeometry(bw + .04, bh + .04, .03), flat("#ffffff"), 0, .1 + bh / 2, 0);
     sign.add(frame, front, back);
-    [-bw * .42, bw * .42].forEach(px => sign.add(mesh(new THREE.BoxGeometry(.07, .16, .07), flat("#6d6a76"), px, .08, 0)));
+    [-bw * .42, bw * .42].forEach(px => sign.add(mesh(new THREE.BoxGeometry(.04, .12, .04), flat("#6d6a76"), px, .06, 0)));
     [front, back, frame].forEach(m => { m.userData.idx = i; pickable.push(m); });
-    sign.position.set(0, 0, r * (i === 0 ? .8 : .78)); sign.rotation.x = -.55;
-    props.add(sign);
+    sign.position.set(r * .62, 0, r * .62); sign.rotation.set(-.45, -.4, 0);
+    sign.userData.isSign = true; props.add(sign);
   }
   dress(props, d.land, r);
+  // Keep the sign's corner clear of rim trees and rocks.
+  if (i !== 0) { const sx = r * .62, sz = r * .62; props.children.slice().forEach(c => { if (Math.hypot(c.position.x - sx, c.position.z - sz) < .75 && !c.userData.isSign) props.remove(c); }); }
   props.rotation.y = Math.atan2(view.x, view.z);
   g.add(props);
   scene.add(g);
@@ -1417,7 +1419,7 @@ function select(i) {
   current = i; controls.autoRotate = false;
   const { g } = islands[i];
   const narrow = camera.aspect < .8;
-  const t = new THREE.Vector3(g.position.x, narrow ? -.8 : .9, g.position.z).addScaledVector(islands[i].view, i === 0 ? 1.3 : .7);
+  const t = new THREE.Vector3(g.position.x, narrow ? -.8 : .9, g.position.z).addScaledVector(islands[i].view, i === 0 ? 0 : .3);
   // Stand on the course and look at the stop.
   const dir = islands[i].view;
   const off = new THREE.Vector3(dir.x * 5, 2.7, dir.z * 5).multiplyScalar(narrow ? 1.75 : 1);
