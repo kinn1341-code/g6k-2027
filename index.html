@@ -755,20 +755,27 @@ function signPost(text, x, z, wd = .55) {
   sp.add(mesh(new THREE.PlaneGeometry(wd, wd / 3), new THREE.MeshStandardMaterial({ map: textSign(text, "#ffffff", "#111222"), roughness: .8, side: THREE.DoubleSide }), 0, .72, .03));
   sp.position.set(x, 0, z); return sp;
 }
-// Clickable orange "learn more" board: opens a page in a new tab when tapped.
+// Clickable "learn more" marking painted on the ground: orange pill, chain-link icon, white lettering.
 const linkPick = [];
-function linkSign(text, url, x, z, wd = .62) {
-  const sp = new THREE.Group();
-  sp.add(mesh(new THREE.CylinderGeometry(.025, .025, .7, 6), flat("#6d6a76"), 0, .35, 0));
-  const tex = canvasTex(360, 120, (c, w, h) => {
-    c.fillStyle = "#ff5515"; c.fillRect(0, 0, w, h);
-    c.strokeStyle = "#ffffff"; c.lineWidth = 6; c.strokeRect(8, 8, w - 16, h - 16);
-    c.fillStyle = "#ffffff"; c.font = '900 58px "Noto Sans TC", Inter, sans-serif'; c.textAlign = "center"; c.textBaseline = "middle";
-    c.fillText(text, w / 2, h / 2 + 3);
+function groundLink(text, url, x, z, wd = 1.7) {
+  const W = 1024, H = 180;
+  const tex = canvasTex(W, H, (c, w, h) => {
+    c.fillStyle = "#ff5515"; c.beginPath(); c.roundRect(4, 4, w - 8, h - 8, (h - 8) / 2); c.fill();
+    c.strokeStyle = "#ffffff"; c.lineWidth = 6; c.beginPath(); c.roundRect(16, 16, w - 32, h - 32, (h - 32) / 2); c.stroke();
+    // chain-link symbol: two interlocked rounded links at 45 degrees
+    c.save(); c.translate(130, h / 2); c.rotate(-Math.PI / 4);
+    c.strokeStyle = "#ffffff"; c.lineWidth = 13; c.lineCap = "round";
+    c.beginPath(); c.roundRect(-58, -19, 70, 38, 19); c.stroke();
+    c.beginPath(); c.roundRect(-12, -19, 70, 38, 19); c.stroke();
+    c.restore();
+    let fs = 92; c.font = `900 ${fs}px "Noto Sans TC", Inter, sans-serif`;
+    while (c.measureText(text).width > w - 300 && fs > 30) { fs -= 2; c.font = `900 ${fs}px "Noto Sans TC", Inter, sans-serif`; }
+    c.fillStyle = "#ffffff"; c.textAlign = "center"; c.textBaseline = "middle";
+    c.fillText(text, (230 + w - 50) / 2, h / 2 + 4);
   });
-  const board = mesh(new THREE.PlaneGeometry(wd, wd / 3), new THREE.MeshStandardMaterial({ map: tex, roughness: .7, side: THREE.DoubleSide }), 0, .72, .03);
-  board.userData.url = url; linkPick.push(board); sp.add(board);
-  sp.position.set(x, 0, z); return sp;
+  const m = new THREE.Mesh(new THREE.PlaneGeometry(wd, wd * H / W), new THREE.MeshStandardMaterial({ map: tex, transparent: true, roughness: .9, polygonOffset: true, polygonOffsetFactor: -2 }));
+  m.rotation.x = -Math.PI / 2; m.position.set(x, .014, z); m.receiveShadow = true;
+  m.userData.url = url; linkPick.push(m); return m;
 }
 function puff() {
   const m = new THREE.Mesh(new THREE.IcosahedronGeometry(.08, 0), new THREE.MeshStandardMaterial({ color: "#e6cfa4", transparent: true, opacity: .7, flatShading: true }));
@@ -888,7 +895,7 @@ const PROPS = {
       x.fillText("太陽能供水系統", w / 2 + 7, h / 2 + 3);
     });
     g.add(signPost("太陽能供水系統", -.5, -.6, .85));
-    g.add(linkSign("了解更多 ↗", "https://www.worldvision.org.tw/donations/20", -1.4, -.6));
+    g.add(groundLink("了解更多世界展望會", "https://www.worldvision.org.tw/donations/20", .15, 1.4));
     // Elevated water tower like the field photo: steel lattice, ladder, white tank with an orange band.
     const tower = new THREE.Group(), steel = flat("#d9dde0", { roughness: .4, metalness: .2 });
     const H = 1.75, w = .26;
@@ -1091,7 +1098,7 @@ const PROPS = {
     });
     sch.add(mesh(new THREE.PlaneGeometry(.56, .17), new THREE.MeshStandardMaterial({ map: schoolTex, roughness: .8 }), 0, .78, .362));
     sch.position.set(-.45, 0, -1.0); g.add(sch);
-    g.add(linkSign("了解更多 ↗", "https://www.worldvision.org.tw/donations/20", -1.55, -.35));
+    g.add(groundLink("了解更多世界展望會", "https://www.worldvision.org.tw/donations/20", .15, 1.4));
     // School water tank with the World Vision plate and a drinking tap.
     const tank = new THREE.Group();
     [[-.18, -.18], [.18, -.18], [-.18, .18], [.18, .18]].forEach(([x, z]) => tank.add(mesh(new THREE.BoxGeometry(.05, .8, .05), flat("#6d6a76"), x, .4, z)));
