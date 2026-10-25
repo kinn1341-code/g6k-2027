@@ -87,6 +87,8 @@ body {
 button:focus-visible, a:focus-visible, .pill:focus-visible { outline: 2px solid var(--orange); outline-offset: 2px; }
 
 #labels { display: none; }
+.brand { transition: opacity .35s, transform .35s; }
+body.at-stop .brand { opacity: 0; transform: translateY(-8px); pointer-events: none; }
 .pill {
   position: absolute; left: 0; top: 0; pointer-events: auto; cursor: pointer;
   border: 0; background: var(--paper); color: var(--ink);
@@ -1424,6 +1426,7 @@ function flyTo(target, pos, ms = 1100) {
 const OVERVIEW = { t: new THREE.Vector3(-6.5, 0, -4), p: new THREE.Vector3(-6.5, 26, 45) };
 const overviewPos = () => OVERVIEW.p.clone().multiplyScalar(Math.max(1, Math.min(2, 1.15 / camera.aspect)));
 function select(i) {
+  document.body.classList.add("at-stop");
   current = i; controls.autoRotate = false;
   const { g } = islands[i];
   const narrow = camera.aspect < .8;
@@ -1442,6 +1445,7 @@ const NARROW_VIEW = { t: new THREE.Vector3(-1, 0, 0), p: new THREE.Vector3(-37, 
 const overviewTarget = () => camera.aspect < .8 ? NARROW_VIEW.t.clone() : OVERVIEW.t.clone();
 const overviewCam = () => camera.aspect < .8 ? NARROW_VIEW.p.clone() : overviewPos();
 function overview() {
+  document.body.classList.remove("at-stop");
   current = -1; controls.autoRotate = false;
   flyTo(overviewTarget(), overviewCam());
   pills.forEach(p => p.classList.remove("on", "dim"));
