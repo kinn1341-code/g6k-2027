@@ -1086,18 +1086,27 @@ const PROPS = {
     }));
   },
   school(g) {
-    const sch = new THREE.Group();
-    sch.add(mesh(new THREE.BoxGeometry(1.5, 1.15, .7), flat("#f3ead8"), 0, .575, 0));
-    const roof = mesh(new THREE.CylinderGeometry(.5, .5, 1.5, 3), flat("#ff5515"), 0, 1.3, 0); roof.rotation.z = Math.PI / 2; roof.scale.set(1, 1.07, .9); sch.add(roof);
-    sch.add(mesh(new THREE.BoxGeometry(.28, .5, .02), flat("#0c7993"), 0, .25, .36));
-    [-.48, .48].forEach(x => { sch.add(mesh(new THREE.BoxGeometry(.28, .24, .02), flat("#9fd8ec"), x, .45, .36)); sch.add(mesh(new THREE.BoxGeometry(.28, .24, .02), flat("#9fd8ec"), x, .85, .36)); });
-    const pole = mesh(new THREE.CylinderGeometry(.02, .02, 1.2, 6), flat("#6d6a76"), .85, .6, .15); sch.add(pole);
+    // Single-storey school campus: a main classroom block with the name plate and two smaller classroom blocks.
+    const wall = flat("#f3ead8"), roofM = flat("#ff5515"), win = flat("#9fd8ec"), doorM = flat("#0c7993");
+    const block = (w, d, nWin) => {
+      const b = new THREE.Group(), H = .62;
+      b.add(mesh(new THREE.BoxGeometry(w, H, d), wall, 0, H / 2, 0));
+      const roof = mesh(new THREE.CylinderGeometry(d * .62, d * .62, w + .12, 3), roofM, 0, H + d * .27, 0);
+      roof.rotation.z = Math.PI / 2; roof.scale.set(1, 1, .92); b.add(roof);
+      b.add(mesh(new THREE.BoxGeometry(.22, .38, .02), doorM, 0, .19, d / 2 + .01));
+      for (let k = 0; k < nWin; k++) { const x = (k < nWin / 2 ? -1 : 1) * (.3 + (k % Math.ceil(nWin / 2)) * .3); b.add(mesh(new THREE.BoxGeometry(.2, .18, .02), win, x, .34, d / 2 + .01)); }
+      return b;
+    };
+    const main = block(1.5, .62, 4);
     const schoolTex = canvasTex(300, 90, (x, w, h) => {
       x.fillStyle = "#ffffff"; x.fillRect(0, 0, w, h); x.strokeStyle = "#0c7993"; x.lineWidth = 8; x.strokeRect(4, 4, w - 8, h - 8);
       x.fillStyle = "#111222"; x.font = "900 58px Inter, Arial, sans-serif"; x.textAlign = "center"; x.textBaseline = "middle"; x.fillText("School", w / 2, h / 2 + 3);
     });
-    sch.add(mesh(new THREE.PlaneGeometry(.56, .17), new THREE.MeshStandardMaterial({ map: schoolTex, roughness: .8 }), 0, .78, .362));
-    sch.position.set(-.45, 0, -1.0); g.add(sch);
+    main.add(mesh(new THREE.PlaneGeometry(.42, .126), new THREE.MeshStandardMaterial({ map: schoolTex, roughness: .8 }), 0, .5, .322));
+    main.add(mesh(new THREE.CylinderGeometry(.02, .02, 1.2, 6), flat("#6d6a76"), .9, .6, .1));
+    main.position.set(-.3, 0, -1.15); g.add(main);
+    const west = block(.9, .55, 2); west.position.set(-1.55, 0, -.55); west.rotation.y = .7; g.add(west);
+    const east = block(.9, .55, 2); east.position.set(1.15, 0, -.85); east.rotation.y = -.55; g.add(east);
     g.add(groundLink("Learn more about World Vision", "https://www.worldvision.org.tw/donations/20", .15, 1.4));
     // School water tank with the World Vision plate and a drinking tap.
     const tank = new THREE.Group();
@@ -1105,22 +1114,10 @@ const PROPS = {
     tank.add(mesh(new THREE.CylinderGeometry(.32, .32, .48, 12), flat("#9fd8ec", { roughness: .45 }), 0, 1.04, 0));
     tank.add(mesh(new THREE.PlaneGeometry(.5, .17), new THREE.MeshStandardMaterial({ map: logoTex(imgWhite, "#ff5515", 420, 150, .07), roughness: .7 }), 0, 1.04, .33));
     tank.add(mesh(new THREE.BoxGeometry(.04, .04, .14), flat("#b9b6ae"), 0, .5, .2));
-    tank.position.set(.95, 0, -.25); g.add(tank);
+    tank.position.set(-1.3, 0, .35); tank.rotation.y = .35; g.add(tank);
     const drinker = localKid("#f2c14e", true);
-    drinker.g.position.set(.75, 0, .35); drinker.g.rotation.y = -.25; g.add(drinker.g);
+    drinker.g.position.set(-.75, 0, .75); drinker.g.rotation.y = .1; drinker.g.userData.keep = true; g.add(drinker.g);
     const cup = mesh(new THREE.CylinderGeometry(.06, .05, .12, 8), flat("#9fd8ec"), 0, -.55, .02); drinker.armR.add(cup);
-    // A girl reading on a bench under the tree.
-    const bench = new THREE.Group();
-    bench.add(mesh(new THREE.BoxGeometry(.7, .05, .22), flat("#9a6b42"), 0, .26, 0));
-    [-.3, .3].forEach(x => bench.add(mesh(new THREE.BoxGeometry(.05, .26, .18), flat("#7a5236"), x, .13, 0)));
-    bench.position.set(-1.25, 0, .55); bench.rotation.y = .5; g.add(bench);
-    const reader = localKid("#ffffff", false);
-    reader.g.position.set(-1.25, -.1, .55); reader.g.rotation.y = .5; g.add(reader.g);
-    reader.legL.rotation.x = reader.legR.rotation.x = -1.45;
-    const book = new THREE.Group();
-    [-1, 1].forEach(sd => { const pg = mesh(new THREE.BoxGeometry(.16, .2, .02), flat(sd < 0 ? "#ffffff" : "#f6f1e3"), sd * .08, 0, 0); pg.rotation.y = sd * -.35; book.add(pg); });
-    book.add(mesh(new THREE.BoxGeometry(.34, .21, .01), flat("#0c7993"), 0, 0, -.03));
-    book.position.set(0, .95, .3); book.rotation.x = -.6; reader.g.add(book);
     // A handwashing station with a boy washing up.
     const wash = new THREE.Group();
     wash.add(mesh(new THREE.BoxGeometry(.7, .1, .22), flat("#d3d0c9"), 0, .5, 0));
@@ -1156,9 +1153,6 @@ const PROPS = {
     });
     wc.position.set(1.4, 0, .55); wc.rotation.y = -.75; g.add(wc);
     anim.push(t => {
-      reader.armL.rotation.set(-1.25, 0, -.25); reader.armR.rotation.set(-1.25, 0, .25);
-      reader.g.position.y = -.1 + Math.sin(t * 1.4) * .005;
-      book.rotation.z = Math.sin(t * .8) * .04;
       washer.armL.rotation.set(-1.3 + Math.sin(t * 9) * .15, 0, -.2); washer.armR.rotation.set(-1.3 - Math.sin(t * 9) * .15, 0, .2);
       streams.forEach((st, k) => { st.scale.y = 1 + Math.sin(t * 20 + k) * .06; });
       bubbles.forEach((bb, k) => { const f = (t * .6 + k / 5) % 1; bb.position.set(-.27, .6 + f * .5, .47 + Math.sin(k * 2.1 + t) * .12); bb.material.opacity = .8 * (1 - f); });
@@ -1313,14 +1307,16 @@ const route = new THREE.CatmullRomCurve3([
 ].map(([x, z]) => new THREE.Vector3(x * .8, 0, z)));
 const ROUTE_N = 400, routePts = route.getSpacedPoints(ROUTE_N);
 const distToRoute = (x, z) => routePts.reduce((m, p) => Math.min(m, Math.hypot(p.x - x, p.z - z)), 1e9);
-const STATION_U = [0, .14, .14, .33, .45, .57, .69, .85, .85];
+const STATION_U = [0, .14, .14, .33, .45, .57, .69, .85, .87];
+// Extra distance from the road per stop (the school stop sits a little further out so it does not touch its neighbour).
+const STATION_GAP = [0, 0, 0, 0, 0, 0, 0, 0, .6];
 const STATION_SIDE = [0, 1, -1, 1, -1, 1, -1, 1, -1];
 const islands = [], pickable = [];
 ISLANDS.forEach((d, i) => {
   const u = STATION_U[i], p = route.getPointAt(u), tg = route.getTangentAt(u);
   const nrm = new THREE.Vector3(tg.z, 0, -tg.x);
   const r = i === 0 ? R * 1.4 : R, L = LAND[d.land];
-  const c = i === 0 ? p.clone().addScaledVector(tg, -(r + .2)) : p.clone().addScaledVector(nrm, STATION_SIDE[i] * (r + 1.15));
+  const c = i === 0 ? p.clone().addScaledVector(tg, -(r + .2)) : p.clone().addScaledVector(nrm, STATION_SIDE[i] * (r + 1.15 + STATION_GAP[i]));
   const view = i === 0 ? tg.clone() : p.clone().sub(c).setY(0).normalize();
   const g = new THREE.Group(); g.position.copy(c);
   // A low roadside patch of that ground type, edged in its group colour.
@@ -1373,7 +1369,7 @@ ISLANDS.forEach((d, i) => {
   }
   dress(props, d.land, r);
   // Keep the sign's corner clear of rim trees and rocks (at the school, both front corners stay clear).
-  if (i !== 0) { const corners = d.obj === "school" ? [[-r * .5, r * .62], [r * .62, r * .62]] : [[r * .62, r * .62]]; props.children.slice().forEach(c => { if (!c.userData.isSign && corners.some(([sx, sz]) => Math.hypot(c.position.x - sx, c.position.z - sz) < .75)) props.remove(c); }); }
+  if (i !== 0) { const corners = d.obj === "school" ? [[-r * .5, r * .62], [r * .62, r * .62]] : [[r * .62, r * .62]]; props.children.slice().forEach(c => { if (!c.userData.isSign && !c.userData.keep && corners.some(([sx, sz]) => Math.hypot(c.position.x - sx, c.position.z - sz) < .75)) props.remove(c); }); }
   props.rotation.y = Math.atan2(view.x, view.z);
   g.add(props);
   scene.add(g);
