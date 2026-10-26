@@ -201,6 +201,17 @@ body.at-stop .brand { opacity: 0; transform: translateY(-8px); pointer-events: n
 .tools .lang { background: var(--ink); color: #fff; display: inline-flex; gap: 6px; align-items: center; }
 .tools .lang:hover { background: var(--orange-deep); }
 .tools .lang span { opacity: .55; font-weight: 500; }
+
+/* Phones with enlarged system/browser text (common in LINE/FB in-app browsers):
+   keep the card on screen, let it scroll, and keep the fold button reachable. */
+html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+.card { max-height: calc(100% - 130px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)); overflow-y: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; }
+@media (max-width: 560px) {
+  .card { max-height: 58%; }
+  .card .fold { position: sticky; top: -16px; order: -1; justify-self: end; margin: -4px -4px -2px 0; z-index: 3; }
+  .card h2, .card .eyebrow { padding-right: 0; }
+  .card.folded { overflow: visible; }
+}
 </style>
 
 <div id="stage" aria-hidden="true"></div>
