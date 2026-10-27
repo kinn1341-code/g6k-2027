@@ -248,7 +248,6 @@ html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
 <script type="module">
 import * as THREE from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
-import { RoundedBoxGeometry } from "three/addons/geometries/RoundedBoxGeometry.js";
 
 const SIGNUP = "https://irunner.biji.co/2027Global?utm_source=wvt";
 const LOGO_WHITE = document.getElementById("wvLogo").src;
@@ -478,40 +477,6 @@ function addFace(g, kind, dark) {
   g.add(f);
 }
 
-
-/* ---------- Clay (plasticine) character style ---------- */
-const clayBump = canvasTex(256, 256, (x, w, h) => {
-  x.fillStyle = "#808080"; x.fillRect(0, 0, w, h);
-  for (let k = 0; k < 9000; k++) { const v = 110 + Math.floor(Math.random() * 40); x.fillStyle = `rgb(${v},${v},${v})`; x.fillRect(Math.random() * w, Math.random() * h, 2, 2); }
-  x.lineWidth = 1.2;
-  for (let k = 0; k < 26; k++) {
-    const cx = Math.random() * w, cy = Math.random() * h;
-    for (let r = 4; r < 22; r += 3) { const v = r % 2 ? 150 : 100; x.strokeStyle = `rgba(${v},${v},${v},.35)`; x.beginPath(); x.ellipse(cx, cy, r, r * .7, k, 0, Math.PI * 1.6); x.stroke(); }
-  }
-});
-clayBump.wrapS = clayBump.wrapT = THREE.RepeatWrapping;
-const clayCache = {};
-const clay = c => clayCache[c] || (clayCache[c] = new THREE.MeshStandardMaterial({ color: c, roughness: .62, metalness: 0, bumpMap: clayBump, bumpScale: .9 }));
-const cap = (r, len) => new THREE.CapsuleGeometry(r, len, 4, 10);
-const rbox = (w, h, d, r = .05) => new RoundedBoxGeometry(w, h, d, 2, r);
-const ball = (r) => new THREE.SphereGeometry(r, 18, 12);
-function clayFace(hg, kind, dark, fem) {
-  const f = new THREE.Group(), ink = clay("#1a120e"), glint = new THREE.MeshBasicMaterial({ color: "#ffffff" });
-  const browC = clay(dark ? "#120b08" : "#4a2c1c");
-  [-1, 1].forEach(sd => {
-    const eye = mesh(ball(.034), ink, sd * .072, 1.45, .172); eye.scale.set(1, kind === "pain" ? .4 : 1.15, .55); f.add(eye);
-    if (kind !== "pain") f.add(mesh(new THREE.SphereGeometry(.009, 8, 6), glint, sd * .072 + .01, 1.465, .19));
-    if (fem) [0, 1].forEach(k => { const l = mesh(cap(.006, .025), ink, sd * (.1 + k * .008), 1.475 - k * .012, .175); l.rotation.z = sd * (-.9 - k * .5); f.add(l); });
-    const br = mesh(cap(fem ? .008 : .012, .05), browC, sd * .075, 1.525, .175); br.rotation.z = Math.PI / 2 + (kind === "cry" ? sd * .35 : kind === "pain" ? sd * -.35 : sd * (fem ? -.18 : -.05)); f.add(br);
-    const ck = mesh(ball(.03), clay(fem ? "#f2788a" : "#f08a7a"), sd * .115, 1.39, .155); ck.scale.set(1, .6, .4); f.add(ck);
-    if (kind === "cry") { const t = mesh(ball(.016), clay("#7fd0f0"), sd * .08, 1.4, .185); t.scale.y = 1.7; f.add(t); }
-  });
-  f.add(mesh(ball(.022), clay(dark ? "#3a2418" : "#e9a98c"), 0, 1.415, .2));
-  const lip = fem ? (dark ? "#d8606a" : "#d9485a") : (dark ? "#e8a090" : "#8a3a2a");
-  const mouth = mesh(new THREE.TorusGeometry(kind === "pain" ? .035 : .03, fem ? .011 : .008, 8, 16, Math.PI), clay(lip), 0, kind === "smile" ? 1.37 : 1.345, .18);
-  if (kind === "smile") mouth.rotation.z = Math.PI;
-  f.add(mouth); hg.add(f);
-}
 /* Low-poly person: sport pants (shorts or long) and sneakers on everyone. */
 const SKIN = ["#f6d9ca", "#f1cdb9", "#f8e0d2", "#eec6b2", "#4a2e1f"];
 const wvTeeFront = canvasTex(220, 270, (x, w, h) => {
@@ -528,51 +493,43 @@ const PANTS = ["#23263a", "#3f3d4c", "#1f3a4f"];
 let personN = 0;
 function person(shirt, skinIdx = 0, s = 1, o = {}) {
   const n = personN++;
-  const fem = (o.gender || (n % 2 ? "f" : "m")) === "f";
   const g = new THREE.Group();
-  const skin = clay(SKIN[skinIdx % SKIN.length]);
+  const skin = flat(SKIN[skinIdx % SKIN.length]);
   const shorts = o.shorts ?? (n % 2 === 0);
-  const pants = clay(PANTS[n % PANTS.length]);
-  const src = o.top || teeMats;
-  const top = src.map(m => m.map ? new THREE.MeshStandardMaterial({ map: m.map, roughness: .62, bumpMap: clayBump, bumpScale: .6 }) : clay("#" + m.color.getHexString()));
+  const pants = flat(PANTS[n % PANTS.length]), stripe = flat("#ffffff"), sole = soleMats[n % 3];
+  const top = o.top || teeMats;
   const leg = side => {
     const p = new THREE.Group();
-    if (shorts) { p.add(mesh(cap(.105, .14), pants, 0, -.14, 0)); p.add(mesh(cap(.068, .3), skin, 0, -.42, 0)); }
-    else p.add(mesh(cap(.09, .46), pants, 0, -.32, 0));
-    if (skinIdx === 4) { const ft = mesh(cap(.055, .08), skin, 0, -.63, .04); ft.rotation.x = Math.PI / 2; p.add(ft); }
-    else { p.add(mesh(rbox(.14, .1, .24, .04), clay("#f4f2ee"), 0, -.61, .04)); p.add(mesh(rbox(.145, .03, .245, .012), clay(["#ff5515", "#111222", "#0c7993"][n % 3]), 0, -.655, .04)); }
+    if (shorts) {
+      p.add(mesh(new THREE.CylinderGeometry(.1, .095, .26, 6), pants, 0, -.13, 0));
+      p.add(mesh(new THREE.CylinderGeometry(.075, .065, .36, 6), skin, 0, -.42, 0));
+    } else {
+      p.add(mesh(new THREE.CylinderGeometry(.095, .075, .6, 6), pants, 0, -.3, 0));
+      p.add(mesh(new THREE.BoxGeometry(.015, .56, .03), stripe, side * .088, -.3, 0));
+    }
+    if (skinIdx === 4) {
+      // Barefoot: the African children and villagers wear no shoes.
+      p.add(mesh(new THREE.BoxGeometry(.1, .05, .18), skin, 0, -.62, .04));
+    } else {
+      p.add(mesh(new THREE.BoxGeometry(.13, .08, .22), shoeMat, 0, -.6, .04));
+      p.add(mesh(new THREE.BoxGeometry(.135, .025, .23), sole, 0, -.645, .04));
+    }
     return p;
   };
-  const arm = () => { const p = new THREE.Group(); p.add(mesh(cap(.062, .36), skin, 0, -.24, 0)); p.add(mesh(ball(.07), skin, 0, -.48, 0)); return p; };
+  const arm = () => { const p = new THREE.Group(); p.add(mesh(new THREE.CylinderGeometry(.07, .063, .52, 6), skin, 0, -.26, 0)); return p; };
   const legL = leg(-1), legR = leg(1);
   legL.position.set(-.12, .68, 0); legR.position.set(.12, .68, 0);
-  const torso = new THREE.Mesh(rbox(fem ? .4 : .44, .54, .28, .09), top); torso.position.y = .94; torso.castShadow = true;
-  const sleeves = [-1, 1].map(sd => { const sl = mesh(cap(.085, .08), top[0], sd * .27, 1.1, 0); sl.rotation.z = -sd * 1.2; return sl; });
-  // round clay head; women and girls get long hair, lashes and lip colour, men and boys short cropped hair
-  const hg = new THREE.Group();
-  const head = mesh(ball(.2), skin, 0, 1.44, 0); head.scale.set(1, .96, .92);
-  [-1, 1].forEach(sd => { const e = mesh(ball(.05), skin, sd * .195, 1.43, 0); e.scale.set(.6, 1, .8); hg.add(e); });
-  const hairC = clay(o.hair || (skinIdx === 4 ? "#1c1410" : fem ? "#3a2418" : "#4a2c1c"));
-  const hairG = new THREE.Group();
-  const capM = mesh(ball(.21), hairC, 0, 1.5, -.025); capM.scale.set(1.03, .8, 1); hairG.add(capM);
-  if (fem) {
-    // side-swept fringe and long hair falling past the shoulders
-    for (let k = 0; k < 6; k++) { const a = -.9 + k * .32; const t = mesh(cap(.05, .1), hairC, Math.sin(a) * .15, 1.575, Math.cos(a) * .135); t.rotation.set(1.25, 0, -a * .7 - .35); t.scale.set(1, 1, .6); hairG.add(t); }
-    [-1, 1].forEach(sd => { const sd1 = mesh(cap(.075, o.short ? .22 : .34), hairC, sd * .185, o.short ? 1.36 : 1.3, -.04); sd1.rotation.z = sd * .08; hairG.add(sd1); });
-    const back = mesh(rbox(.36, o.short ? .3 : .44, .1, .05), hairC, 0, o.short ? 1.38 : 1.32, -.14); hairG.add(back);
-    if (o.short) [-1, 1].forEach(sd => { hairG.add(mesh(ball(.07), hairC, sd * .21, 1.25, -.06)); hairG.add(mesh(ball(.025), clay("#ff5515"), sd * .2, 1.31, -.02)); });
-    else { const bow = mesh(ball(.045), clay("#ff5515"), .13, 1.63, .06); bow.scale.set(1.5, .8, .7); hairG.add(bow); }
-  } else {
-    for (let k = 0; k < 8; k++) { const a = -1.05 + k * .3; const t = mesh(cap(.042, .09), hairC, Math.sin(a) * .15, 1.59, Math.cos(a) * .125); t.rotation.set(1.05, 0, -a * .9); t.scale.set(1, 1, .7); hairG.add(t); }
-    [-1, 1].forEach(sd => { const sb = mesh(cap(.03, .06), hairC, sd * .19, 1.47, -.01); hairG.add(sb); });
-  }
-  hg.add(head, hairG);
-  clayFace(hg, o.face || "smile", skinIdx === 4, fem);
-  const HS = 1.3; hg.scale.setScalar(HS); hg.position.y = 1.22 * (1 - HS);
+  const torso = new THREE.Mesh(new THREE.BoxGeometry(.44, .54, .26), top); torso.position.y = .94; torso.castShadow = true;
+  const sleeveL = new THREE.Mesh(new THREE.BoxGeometry(.16, .16, .2), top === teeMats
+    ? [teeMats[0], new THREE.MeshStandardMaterial({ map: sleeveTex, roughness: .85 }), teeMats[0], teeMats[0], teeMats[0], teeMats[0]] : top[0]);
+  sleeveL.position.set(-.3, 1.11, 0); sleeveL.castShadow = true;
+  const sleeves = [sleeveL, mesh(new THREE.BoxGeometry(.16, .16, .2), top[0], .3, 1.11, 0)];
+  const head = mesh(new THREE.IcosahedronGeometry(.19, 1), skin, 0, 1.42, 0);
+  const hair = mesh(new THREE.IcosahedronGeometry(.2, 1), flat("#1d1a1a"), 0, 1.48, -.03); hair.scale.set(1, o.short ? .55 : .7, 1);
   const armL = arm(), armR = arm();
-  armL.position.set(-.3, 1.15, 0); armR.position.set(.3, 1.15, 0);
-  g.add(legL, legR, torso, ...sleeves, hg, armL, armR);
-  g.traverse(m => { if (m.isMesh) m.castShadow = true; });
+  armL.position.set(-.3, 1.17, 0); armR.position.set(.3, 1.17, 0);
+  g.add(legL, legR, torso, ...sleeves, head, hair, armL, armR);
+  addFace(g, o.face || "smile", skinIdx === 4);
   g.scale.setScalar(s);
   return { g, armL, armR, legL, legR };
 }
@@ -687,9 +644,9 @@ function savanna(g, r, opts = {}) {
   if (opts.banana !== false) g.add(banana(r * .55, -r * .5, .9));
 }
 function villager(top, skirt, s = .85, face = "smile", wrap = true) {
-  const p = person(null, 4, s, { top: plainTop(top), shorts: false, face, gender: "f", short: s < .7 });
-  const km = kangaMat(skirt); km.roughness = .62; km.bumpMap = clayBump; km.bumpScale = .6; const sk = mesh(new THREE.CylinderGeometry(.24, .31, .48, 24), km, 0, .45, 0); p.g.add(sk); const hem = mesh(new THREE.TorusGeometry(.3, .025, 8, 24), km, 0, .21, 0); hem.rotation.x = Math.PI / 2; p.g.add(hem);
-  if (wrap) { const w = mesh(ball(.28), clay(skirt), 0, 1.8, -.06); w.scale.set(1.02, .5, 1); p.g.add(w); }
+  const p = person(null, 4, s, { top: plainTop(top), shorts: false, face });
+  const sk = mesh(new THREE.CylinderGeometry(.24, .3, .48, 12), kangaMat(skirt), 0, .45, 0); p.g.add(sk);
+  if (wrap) { const w = mesh(new THREE.IcosahedronGeometry(.2, 1), flat(skirt), 0, 1.6, -.05); w.scale.set(1.02, .42, 1); p.g.add(w); }
   return p;
 }
 function babyOnBack(p, cloth = "#8a3b2a") {
